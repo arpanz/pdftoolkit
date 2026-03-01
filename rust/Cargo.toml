@@ -1,0 +1,24 @@
+[package]
+name = "rust"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "rust"
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+flutter_rust_bridge = "2"
+lopdf = { version = "0.34", features = ["nom_parser"] }
+image = { version = "0.25", features = ["jpeg", "png", "gif", "bmp", "tiff", "webp"] }
+anyhow = "1"
+chrono = "0.4"
+uuid = { version = "1", features = ["v4"] }
+serde = { version = "1", features = ["derive"] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
