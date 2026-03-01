@@ -1,0 +1,651 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/providers/app_provider.dart';
+import '../merge/merge_screen.dart';
+import '../split/split_screen.dart';
+import '../protect/protect_screen.dart';
+import '../protect/unlock_screen.dart';
+import '../protect/image_to_pdf_screen.dart';
+
+class WorkspaceScreen extends StatelessWidget {
+  const WorkspaceScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final isPro = context.watch<AppProvider>().isPro;
+
+    return Scaffold(
+      backgroundColor: AppColors.bgDark,
+      body: CustomScrollView(
+        slivers: [
+          // App Bar
+          SliverAppBar(
+            expandedHeight: 100,
+            floating: true,
+            snap: true,
+            backgroundColor: AppColors.bgDark,
+            flexibleSpace: FlexibleSpaceBar(
+              titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
+              title: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: AppColors.primaryGradient,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.picture_as_pdf_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'BatchPDF',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              if (!isPro)
+                GestureDetector(
+                  onTap: () => _showProPaywall(context),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 14),
+                        SizedBox(width: 4),
+                        Text(
+                          'PRO',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                // Tools grid
+                _SectionHeader(title: 'PDF Tools'),
+                const SizedBox(height: 12),
+                _ToolsGrid(),
+                const SizedBox(height: 24),
+
+                // Cross-promo banner
+                _CrossPromoBanner(),
+                const SizedBox(height: 24),
+
+                // Free tier info (if not pro)
+                if (!isPro) _FreeTierCard(onUpgrade: () => _showProPaywall(context)),
+              ]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showProPaywall(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => const _ProPaywallSheet(),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: const TextStyle(
+        color: AppColors.textSecondary,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.2,
+      ),
+    );
+  }
+}
+
+class _ToolsGrid extends StatelessWidget {
+  final List<_ToolCard> _tools = const [
+    _ToolCard(
+      icon: Icons.merge_type_rounded,
+      title: 'Merge',
+      subtitle: 'Combine multiple PDFs',
+      gradient: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+      route: 'merge',
+    ),
+    _ToolCard(
+      icon: Icons.content_cut_rounded,
+      title: 'Split',
+      subtitle: 'Extract page ranges',
+      gradient: [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
+      route: 'split',
+    ),
+    _ToolCard(
+      icon: Icons.lock_rounded,
+      title: 'Protect',
+      subtitle: 'Add AES password',
+      gradient: [Color(0xFF10B981), Color(0xFF059669)],
+      route: 'protect',
+    ),
+    _ToolCard(
+      icon: Icons.lock_open_rounded,
+      title: 'Unlock',
+      subtitle: 'Remove password',
+      gradient: [Color(0xFFF59E0B), Color(0xFFD97706)],
+      route: 'unlock',
+    ),
+    _ToolCard(
+      icon: Icons.image_rounded,
+      title: 'Image → PDF',
+      subtitle: 'Convert gallery images',
+      gradient: [Color(0xFFEF4444), Color(0xFFDC2626)],
+      route: 'image_to_pdf',
+    ),
+  ];
+
+  const _ToolsGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.1,
+      ),
+      itemCount: _tools.length,
+      itemBuilder: (context, index) {
+        return _tools[index]
+            .animate()
+            .fadeIn(delay: Duration(milliseconds: 50 * index))
+            .slideY(begin: 0.2, duration: 400.ms, curve: Curves.easeOut);
+      },
+    );
+  }
+}
+
+class _ToolCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final List<Color> gradient;
+  final String route;
+
+  const _ToolCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.gradient,
+    required this.route,
+  });
+
+  void _navigate(BuildContext context) {
+    Widget screen;
+    switch (route) {
+      case 'merge':
+        screen = const MergeScreen();
+        break;
+      case 'split':
+        screen = const SplitScreen();
+        break;
+      case 'protect':
+        screen = const ProtectScreen();
+        break;
+      case 'unlock':
+        screen = const UnlockScreen();
+        break;
+      case 'image_to_pdf':
+        screen = const ImageToPdfScreen();
+        break;
+      default:
+        return;
+    }
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _navigate(context),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.bgCard,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Stack(
+          children: [
+            // Background gradient accent
+            Positioned(
+              top: -20,
+              right: -20,
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      gradient[0].withOpacity(0.15),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Icon
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: gradient,
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: gradient[0].withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(icon, color: Colors.white, size: 24),
+                  ),
+                  const Spacer(),
+
+                  // Title
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+
+                  // Subtitle
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 11,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CrossPromoBanner extends StatelessWidget {
+  const _CrossPromoBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFF10B981).withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.receipt_long_rounded,
+              color: Color(0xFF10B981),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Need to bill a client?',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  'Try our Offline Invoice Maker →',
+                  style: TextStyle(
+                    color: Color(0xFF10B981),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(
+            Icons.arrow_forward_ios_rounded,
+            color: AppColors.textMuted,
+            size: 14,
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: 300.ms);
+  }
+}
+
+class _FreeTierCard extends StatelessWidget {
+  final VoidCallback onUpgrade;
+
+  const _FreeTierCard({required this.onUpgrade});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFF59E0B).withOpacity(0.1),
+            const Color(0xFFEF4444).withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFF59E0B).withOpacity(0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.workspace_premium_rounded, color: Color(0xFFF59E0B), size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Free Tier Limits',
+                style: TextStyle(
+                  color: Color(0xFFF59E0B),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _LimitRow(icon: Icons.merge_type_rounded, text: 'Max 3 files per merge'),
+          const SizedBox(height: 6),
+          _LimitRow(icon: Icons.storage_rounded, text: 'Max 5MB per file'),
+          const SizedBox(height: 6),
+          _LimitRow(icon: Icons.branding_watermark_rounded, text: 'Watermark on output'),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: onUpgrade,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Center(
+                child: Text(
+                  '⚡ Unlock Pro — \$3.50 One-Time',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: 400.ms);
+  }
+}
+
+class _LimitRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _LimitRow({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.textMuted, size: 14),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProPaywallSheet extends StatelessWidget {
+  const _ProPaywallSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: const EdgeInsets.all(28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.border,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Icon
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Icon(
+              Icons.workspace_premium_rounded,
+              color: Colors.white,
+              size: 36,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          const Text(
+            'Unlock Pro Workspace',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'One-time purchase. No subscription.',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+          ),
+          const SizedBox(height: 28),
+
+          // Features
+          _ProFeature(icon: Icons.all_inclusive_rounded, text: 'Unlimited file sizes'),
+          _ProFeature(icon: Icons.merge_type_rounded, text: 'Unlimited batch merging'),
+          _ProFeature(icon: Icons.branding_watermark_rounded, text: 'No watermarks'),
+          _ProFeature(icon: Icons.block_rounded, text: 'Remove all ads'),
+          const SizedBox(height: 28),
+
+          // Price button
+          GestureDetector(
+            onTap: () {
+              context.read<AppProvider>().unlockPro();
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('🎉 Pro unlocked! Enjoy unlimited access.')),
+              );
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+                ),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFF59E0B).withOpacity(0.3),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Text(
+                  '⚡ Get Pro — \$3.50 / ₹295',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Maybe later',
+              style: TextStyle(color: AppColors.textMuted),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProFeature extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _ProFeature({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: AppColors.success.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: AppColors.success, size: 16),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            text,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
