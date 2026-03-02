@@ -219,6 +219,7 @@ import 'package:pdftoolkit/src/rust/api/simple.dart';
 import 'package:pdftoolkit/src/rust/frb_generated.dart';
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await RustLib.init();
   runApp(const MyApp());
 }
