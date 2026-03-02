@@ -64,12 +64,14 @@ class PdfBridge {
       // Free tier checks
       if (!isPro) {
         final sizeError = validateFileSizeForFree(paths);
-        if (sizeError != null)
+        if (sizeError != null) {
           return ProcessingResult(success: false, error: sizeError);
+        }
 
         final countError = validateMergeCountForFree(paths.length);
-        if (countError != null)
+        if (countError != null) {
           return ProcessingResult(success: false, error: countError);
+        }
       }
 
       final outputPath = await generateOutputPath('merged');
