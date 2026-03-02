@@ -12,7 +12,7 @@ import '../../core/ffi/pdf_bridge.dart';
 import '../../shared/widgets/gradient_button.dart';
 import '../../shared/widgets/processing_dialog.dart';
 import '../../shared/widgets/success_screen.dart';
-import '../../rust/frb_generated.dart';
+import 'package:pdftoolkit/rust/api/pdf_ops.dart';
 
 class ImageToPdfScreen extends StatefulWidget {
   const ImageToPdfScreen({super.key});
@@ -74,7 +74,8 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
         barrierDismissible: false,
         barrierColor: Colors.black.withOpacity(0.7),
         builder: (_) => ProcessingDialog(
-          title: 'Converting ${_selectedImages.length} Image${_selectedImages.length == 1 ? '' : 's'}...',
+          title:
+              'Converting ${_selectedImages.length} Image${_selectedImages.length == 1 ? '' : 's'}...',
           subtitle: 'Building PDF via Rust Engine',
         ),
       );
@@ -100,7 +101,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
           pageCount: result.pageCount,
           operation: PdfOperation.imageToPdf,
           createdAt: DateTime.now(),
-          processingMs: result.processingMs,
+          processingMs: result.processingMs.toInt(),
         );
         await appProvider.addFile(model);
 
@@ -111,7 +112,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
               builder: (_) => SuccessScreen(
                 outputPath: result.outputPath,
                 pageCount: result.pageCount,
-                processingMs: result.processingMs,
+                processingMs: result.processingMs.toInt(),
                 operationLabel: 'Image→PDF',
                 onDone: () => Navigator.of(context).popUntil((r) => r.isFirst),
               ),
@@ -121,16 +122,18 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${result.error ?? "Unknown error"}')),
+            SnackBar(
+              content: Text('Error: ${result.error ?? "Unknown error"}'),
+            ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -172,7 +175,8 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
                         _selectedImages.insert(newIndex, item);
                       });
                     },
-                    onRemove: (index) => setState(() => _selectedImages.removeAt(index)),
+                    onRemove: (index) =>
+                        setState(() => _selectedImages.removeAt(index)),
                   ),
           ),
           if (_selectedImages.isNotEmpty)
@@ -183,7 +187,8 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
                 border: Border(top: BorderSide(color: AppColors.border)),
               ),
               child: GradientButton(
-                label: 'Convert ${_selectedImages.length} Image${_selectedImages.length == 1 ? '' : 's'} to PDF',
+                label:
+                    'Convert ${_selectedImages.length} Image${_selectedImages.length == 1 ? '' : 's'} to PDF',
                 icon: Icons.picture_as_pdf_rounded,
                 onPressed: _isProcessing ? null : _convert,
                 isLoading: _isProcessing,
@@ -268,10 +273,17 @@ class _ImageGrid extends StatelessWidget {
             children: [
               Text(
                 '${images.length} image${images.length == 1 ? '' : 's'} selected',
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                ),
               ),
               const Spacer(),
-              const Icon(Icons.drag_indicator_rounded, color: AppColors.textMuted, size: 14),
+              const Icon(
+                Icons.drag_indicator_rounded,
+                color: AppColors.textMuted,
+                size: 14,
+              ),
               const SizedBox(width: 4),
               const Text(
                 'Drag to reorder',
@@ -299,7 +311,10 @@ class _ImageGrid extends StatelessWidget {
                     color: AppColors.error.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(Icons.delete_rounded, color: AppColors.error),
+                  child: const Icon(
+                    Icons.delete_rounded,
+                    color: AppColors.error,
+                  ),
                 ),
                 child: Container(
                   key: ValueKey('img_$path'),
@@ -345,7 +360,10 @@ class _ImageGrid extends StatelessWidget {
                             width: 52,
                             height: 52,
                             color: AppColors.bgSurface,
-                            child: const Icon(Icons.broken_image_rounded, color: AppColors.textMuted),
+                            child: const Icon(
+                              Icons.broken_image_rounded,
+                              color: AppColors.textMuted,
+                            ),
                           ),
                         ),
                       ),
@@ -377,7 +395,11 @@ class _ImageGrid extends StatelessWidget {
                         ),
                       ),
 
-                      const Icon(Icons.drag_indicator_rounded, color: AppColors.textMuted, size: 20),
+                      const Icon(
+                        Icons.drag_indicator_rounded,
+                        color: AppColors.textMuted,
+                        size: 20,
+                      ),
                     ],
                   ),
                 ),

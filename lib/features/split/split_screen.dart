@@ -12,7 +12,7 @@ import '../../core/ffi/pdf_bridge.dart';
 import '../../shared/widgets/gradient_button.dart';
 import '../../shared/widgets/processing_dialog.dart';
 import '../../shared/widgets/success_screen.dart';
-import '../../rust/frb_generated.dart';
+import 'package:pdftoolkit/rust/api/pdf_ops.dart';
 
 class SplitScreen extends StatefulWidget {
   const SplitScreen({super.key});
@@ -105,7 +105,9 @@ class _SplitScreenState extends State<SplitScreen> {
       for (final page in pages) {
         if (page < 1 || page > _totalPages) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Page $page is out of range (1-$_totalPages)')),
+            SnackBar(
+              content: Text('Page $page is out of range (1-$_totalPages)'),
+            ),
           );
           return;
         }
@@ -118,7 +120,9 @@ class _SplitScreenState extends State<SplitScreen> {
     if (!isPro) {
       final size = File(_selectedFile!).lengthSync() / (1024 * 1024);
       if (size > 5) {
-        _showUpgradeDialog('File is ${size.toStringAsFixed(1)}MB. Free tier supports up to 5MB.');
+        _showUpgradeDialog(
+          'File is ${size.toStringAsFixed(1)}MB. Free tier supports up to 5MB.',
+        );
         return;
       }
     }
@@ -158,7 +162,7 @@ class _SplitScreenState extends State<SplitScreen> {
           pageCount: result.pageCount,
           operation: PdfOperation.split,
           createdAt: DateTime.now(),
-          processingMs: result.processingMs,
+          processingMs: result.processingMs.toInt(),
         );
         await appProvider.addFile(model);
 
@@ -169,7 +173,7 @@ class _SplitScreenState extends State<SplitScreen> {
               builder: (_) => SuccessScreen(
                 outputPath: result.outputPath,
                 pageCount: result.pageCount,
-                processingMs: result.processingMs,
+                processingMs: result.processingMs.toInt(),
                 operationLabel: 'Split',
                 onDone: () => Navigator.of(context).popUntil((r) => r.isFirst),
               ),
@@ -179,16 +183,18 @@ class _SplitScreenState extends State<SplitScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${result.error ?? "Unknown error"}')),
+            SnackBar(
+              content: Text('Error: ${result.error ?? "Unknown error"}'),
+            ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -200,8 +206,14 @@ class _SplitScreenState extends State<SplitScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.bgCard,
-        title: const Text('Upgrade to Pro', style: TextStyle(color: AppColors.textPrimary)),
-        content: Text(message, style: const TextStyle(color: AppColors.textSecondary)),
+        title: const Text(
+          'Upgrade to Pro',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -263,7 +275,10 @@ class _SplitScreenState extends State<SplitScreen> {
                 decoration: InputDecoration(
                   hintText: 'e.g., 1-5, 9, 12-15',
                   hintStyle: const TextStyle(color: AppColors.textMuted),
-                  prefixIcon: const Icon(Icons.content_cut_rounded, color: AppColors.primary),
+                  prefixIcon: const Icon(
+                    Icons.content_cut_rounded,
+                    color: AppColors.primary,
+                  ),
                   helperText: _totalPages > 0
                       ? 'This PDF has $_totalPages pages'
                       : null,
@@ -281,7 +296,8 @@ class _SplitScreenState extends State<SplitScreen> {
                   children: [
                     _RangeChip(
                       label: 'First half',
-                      onTap: () => _rangeController.text = '1-${(_totalPages / 2).floor()}',
+                      onTap: () => _rangeController.text =
+                          '1-${(_totalPages / 2).floor()}',
                     ),
                     _RangeChip(
                       label: 'Second half',
@@ -335,7 +351,9 @@ class _FilePicker extends StatelessWidget {
           color: AppColors.bgCard,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: selectedFile != null ? AppColors.primary.withOpacity(0.5) : AppColors.border,
+            color: selectedFile != null
+                ? AppColors.primary.withOpacity(0.5)
+                : AppColors.border,
           ),
         ),
         child: selectedFile == null
@@ -348,7 +366,10 @@ class _FilePicker extends StatelessWidget {
                       color: AppColors.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.upload_file_rounded, color: AppColors.primary),
+                    child: const Icon(
+                      Icons.upload_file_rounded,
+                      color: AppColors.primary,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   const Column(
@@ -364,7 +385,10 @@ class _FilePicker extends StatelessWidget {
                       ),
                       Text(
                         'Tap to browse your files',
-                        style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                        style: TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -379,7 +403,10 @@ class _FilePicker extends StatelessWidget {
                       color: AppColors.error.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.picture_as_pdf_rounded, color: AppColors.error),
+                    child: const Icon(
+                      Icons.picture_as_pdf_rounded,
+                      color: AppColors.error,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -398,12 +425,19 @@ class _FilePicker extends StatelessWidget {
                         ),
                         Text(
                           totalPages > 0 ? '$totalPages pages' : 'Loading...',
-                          style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                          style: const TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.swap_horiz_rounded, color: AppColors.primary, size: 20),
+                  const Icon(
+                    Icons.swap_horiz_rounded,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
                 ],
               ),
       ),

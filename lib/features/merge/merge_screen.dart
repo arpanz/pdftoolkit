@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:pdftoolkit/rust/api/pdf_ops.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
@@ -12,7 +13,6 @@ import '../../core/ffi/pdf_bridge.dart';
 import '../../shared/widgets/gradient_button.dart';
 import '../../shared/widgets/processing_dialog.dart';
 import '../../shared/widgets/success_screen.dart';
-import '../../rust/frb_generated.dart';
 
 class MergeScreen extends StatefulWidget {
   const MergeScreen({super.key});
@@ -56,13 +56,17 @@ class _MergeScreenState extends State<MergeScreen> {
     // Free tier validation
     if (!isPro) {
       if (_selectedFiles.length > 3) {
-        _showUpgradeDialog('Free tier supports merging up to 3 files. Upgrade to Pro for unlimited merging.');
+        _showUpgradeDialog(
+          'Free tier supports merging up to 3 files. Upgrade to Pro for unlimited merging.',
+        );
         return;
       }
       for (final path in _selectedFiles) {
         final size = File(path).lengthSync() / (1024 * 1024);
         if (size > 5) {
-          _showUpgradeDialog('File "${p.basename(path)}" is ${size.toStringAsFixed(1)}MB. Free tier supports up to 5MB. Upgrade to Pro.');
+          _showUpgradeDialog(
+            'File "${p.basename(path)}" is ${size.toStringAsFixed(1)}MB. Free tier supports up to 5MB. Upgrade to Pro.',
+          );
           return;
         }
       }
@@ -88,6 +92,7 @@ class _MergeScreenState extends State<MergeScreen> {
       final result = await mergePdfs(
         paths: _selectedFiles,
         outputPath: outputPath,
+        addWatermark: !isPro,
       );
 
       if (mounted) Navigator.of(context).pop(); // Close dialog
@@ -123,16 +128,18 @@ class _MergeScreenState extends State<MergeScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${result.error ?? "Unknown error"}')),
+            SnackBar(
+              content: Text('Error: ${result.error ?? "Unknown error"}'),
+            ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -149,14 +156,23 @@ class _MergeScreenState extends State<MergeScreen> {
           children: [
             Icon(Icons.workspace_premium_rounded, color: Color(0xFFF59E0B)),
             SizedBox(width: 8),
-            Text('Upgrade to Pro', style: TextStyle(color: AppColors.textPrimary)),
+            Text(
+              'Upgrade to Pro',
+              style: TextStyle(color: AppColors.textPrimary),
+            ),
           ],
         ),
-        content: Text(message, style: const TextStyle(color: AppColors.textSecondary)),
+        content: Text(
+          message,
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textMuted),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -308,7 +324,10 @@ class _FileList extends StatelessWidget {
                 label: const Text('Add More'),
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                 ),
               ),
             ],
@@ -318,7 +337,11 @@ class _FileList extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              Icon(Icons.drag_indicator_rounded, color: AppColors.textMuted, size: 14),
+              Icon(
+                Icons.drag_indicator_rounded,
+                color: AppColors.textMuted,
+                size: 14,
+              ),
               SizedBox(width: 4),
               Text(
                 'Drag to reorder • Swipe left to remove',
@@ -338,7 +361,10 @@ class _FileList extends StatelessWidget {
                 color: Colors.transparent,
                 child: ScaleTransition(
                   scale: animation.drive(
-                    Tween(begin: 1.0, end: 1.03).chain(CurveTween(curve: Curves.easeOut)),
+                    Tween(
+                      begin: 1.0,
+                      end: 1.03,
+                    ).chain(CurveTween(curve: Curves.easeOut)),
                   ),
                   child: child,
                 ),
@@ -361,7 +387,10 @@ class _FileList extends StatelessWidget {
                     color: AppColors.error.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(Icons.delete_rounded, color: AppColors.error),
+                  child: const Icon(
+                    Icons.delete_rounded,
+                    color: AppColors.error,
+                  ),
                 ),
                 child: Container(
                   key: ValueKey('item_$path'),

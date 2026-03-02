@@ -40,22 +40,22 @@ class SuccessScreen extends StatelessWidget {
 
               // Success icon
               Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.success.withOpacity(0.15),
-                  border: Border.all(
-                    color: AppColors.success.withOpacity(0.4),
-                    width: 2,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.check_rounded,
-                  color: AppColors.success,
-                  size: 52,
-                ),
-              )
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.success.withOpacity(0.15),
+                      border: Border.all(
+                        color: AppColors.success.withOpacity(0.4),
+                        width: 2,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.check_rounded,
+                      color: AppColors.success,
+                      size: 52,
+                    ),
+                  )
                   .animate()
                   .scale(
                     begin: const Offset(0, 0),
@@ -115,7 +115,10 @@ class SuccessScreen extends StatelessWidget {
 
               // Rust speed badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.bgCard,
                   borderRadius: BorderRadius.circular(20),

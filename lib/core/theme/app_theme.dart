@@ -93,18 +93,9 @@ class AppTheme {
             fontWeight: FontWeight.w500,
             fontSize: 14,
           ),
-          bodyLarge: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 16,
-          ),
-          bodyMedium: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 14,
-          ),
-          bodySmall: TextStyle(
-            color: AppColors.textMuted,
-            fontSize: 12,
-          ),
+          bodyLarge: TextStyle(color: AppColors.textPrimary, fontSize: 16),
+          bodyMedium: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+          bodySmall: TextStyle(color: AppColors.textMuted, fontSize: 12),
           labelLarge: TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w600,
@@ -131,7 +122,7 @@ class AppTheme {
         type: BottomNavigationBarType.fixed,
         elevation: 0,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.bgCard,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -209,7 +200,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         behavior: SnackBarBehavior.floating,
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: AppColors.bgCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         titleTextStyle: GoogleFonts.inter(

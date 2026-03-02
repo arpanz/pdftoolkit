@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:path/path.dart' as p;
 import '../models/pdf_file_model.dart';
 
 class AppProvider extends ChangeNotifier {
@@ -30,18 +29,21 @@ class AppProvider extends ChangeNotifier {
 
   Future<void> _loadFiles(SharedPreferences prefs) async {
     final raw = prefs.getStringList(_filesKey) ?? [];
-    _files = raw
-        .map((s) {
-          try {
-            return PdfFileModel.fromJson(jsonDecode(s) as Map<String, dynamic>);
-          } catch (_) {
-            return null;
-          }
-        })
-        .whereType<PdfFileModel>()
-        .where((f) => File(f.path).existsSync())
-        .toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    _files =
+        raw
+            .map((s) {
+              try {
+                return PdfFileModel.fromJson(
+                  jsonDecode(s) as Map<String, dynamic>,
+                );
+              } catch (_) {
+                return null;
+              }
+            })
+            .whereType<PdfFileModel>()
+            .where((f) => File(f.path).existsSync())
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
   }
 
   Future<void> _saveFiles() async {
@@ -59,7 +61,10 @@ class AppProvider extends ChangeNotifier {
   }
 
   Future<void> deleteFile(String id) async {
-    final file = _files.firstWhere((f) => f.id == id, orElse: () => throw Exception('Not found'));
+    final file = _files.firstWhere(
+      (f) => f.id == id,
+      orElse: () => throw Exception('Not found'),
+    );
     try {
       final f = File(file.path);
       if (f.existsSync()) f.deleteSync();

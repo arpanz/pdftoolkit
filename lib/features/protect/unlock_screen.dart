@@ -12,7 +12,7 @@ import '../../core/ffi/pdf_bridge.dart';
 import '../../shared/widgets/gradient_button.dart';
 import '../../shared/widgets/processing_dialog.dart';
 import '../../shared/widgets/success_screen.dart';
-import '../../rust/frb_generated.dart';
+import 'package:pdftoolkit/rust/api/pdf_ops.dart';
 
 class UnlockScreen extends StatefulWidget {
   const UnlockScreen({super.key});
@@ -66,7 +66,11 @@ class _UnlockScreenState extends State<UnlockScreen> {
       final size = File(_selectedFile!).lengthSync() / (1024 * 1024);
       if (size > 5) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('File is ${size.toStringAsFixed(1)}MB. Free tier supports up to 5MB.')),
+          SnackBar(
+            content: Text(
+              'File is ${size.toStringAsFixed(1)}MB. Free tier supports up to 5MB.',
+            ),
+          ),
         );
         return;
       }
@@ -106,7 +110,7 @@ class _UnlockScreenState extends State<UnlockScreen> {
           pageCount: result.pageCount,
           operation: PdfOperation.unlock,
           createdAt: DateTime.now(),
-          processingMs: result.processingMs,
+          processingMs: result.processingMs.toInt(),
         );
         await appProvider.addFile(model);
 
@@ -117,7 +121,7 @@ class _UnlockScreenState extends State<UnlockScreen> {
               builder: (_) => SuccessScreen(
                 outputPath: result.outputPath,
                 pageCount: result.pageCount,
-                processingMs: result.processingMs,
+                processingMs: result.processingMs.toInt(),
                 operationLabel: 'Unlock',
                 onDone: () => Navigator.of(context).popUntil((r) => r.isFirst),
               ),
@@ -127,16 +131,20 @@ class _UnlockScreenState extends State<UnlockScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${result.error ?? "Wrong password or not encrypted"}')),
+            SnackBar(
+              content: Text(
+                'Error: ${result.error ?? "Wrong password or not encrypted"}',
+              ),
+            ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -171,11 +179,17 @@ class _UnlockScreenState extends State<UnlockScreen> {
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.3)),
+                border: Border.all(
+                  color: const Color(0xFFF59E0B).withOpacity(0.3),
+                ),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.lock_open_rounded, color: Color(0xFFF59E0B), size: 28),
+                  Icon(
+                    Icons.lock_open_rounded,
+                    color: Color(0xFFF59E0B),
+                    size: 28,
+                  ),
                   SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -191,7 +205,10 @@ class _UnlockScreenState extends State<UnlockScreen> {
                         ),
                         Text(
                           'Enter the current password to unlock',
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -241,7 +258,9 @@ class _UnlockScreenState extends State<UnlockScreen> {
                         _selectedFile != null
                             ? Icons.picture_as_pdf_rounded
                             : Icons.upload_file_rounded,
-                        color: _selectedFile != null ? AppColors.error : AppColors.primary,
+                        color: _selectedFile != null
+                            ? AppColors.error
+                            : AppColors.primary,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -293,13 +312,19 @@ class _UnlockScreenState extends State<UnlockScreen> {
               style: const TextStyle(color: AppColors.textPrimary),
               decoration: InputDecoration(
                 hintText: 'Enter current password',
-                prefixIcon: const Icon(Icons.key_rounded, color: Color(0xFFF59E0B)),
+                prefixIcon: const Icon(
+                  Icons.key_rounded,
+                  color: Color(0xFFF59E0B),
+                ),
                 suffixIcon: IconButton(
                   icon: Icon(
-                    _obscurePassword ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                    _obscurePassword
+                        ? Icons.visibility_rounded
+                        : Icons.visibility_off_rounded,
                     color: AppColors.textMuted,
                   ),
-                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
                 ),
               ),
             ).animate().fadeIn(delay: 200.ms),

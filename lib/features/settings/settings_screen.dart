@@ -29,8 +29,7 @@ class SettingsScreen extends StatelessWidget {
               onUpgrade: () => _showPaywall(context),
             ).animate().fadeIn().slideY(begin: 0.2),
 
-          if (isPro)
-            _ProActiveCard().animate().fadeIn().slideY(begin: 0.2),
+          if (isPro) _ProActiveCard().animate().fadeIn().slideY(begin: 0.2),
 
           const SizedBox(height: 20),
 
@@ -350,9 +349,7 @@ class _ProCard extends StatelessWidget {
             colors: [Color(0xFF1E1E2E), Color(0xFF252535)],
           ),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: const Color(0xFFF59E0B).withOpacity(0.4),
-          ),
+          border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.4)),
         ),
         child: Row(
           children: [
@@ -386,10 +383,7 @@ class _ProCard extends StatelessWidget {
                   ),
                   Text(
                     '\$3.50 one-time • No subscription',
-                    style: TextStyle(
-                      color: Color(0xFFF59E0B),
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Color(0xFFF59E0B), fontSize: 12),
                   ),
                 ],
               ),
@@ -478,7 +472,11 @@ class _PaywallSheet extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 36),
+            child: const Icon(
+              Icons.workspace_premium_rounded,
+              color: Colors.white,
+              size: 36,
+            ),
           ),
           const SizedBox(height: 20),
           const Text(
@@ -495,9 +493,18 @@ class _PaywallSheet extends StatelessWidget {
             style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
           ),
           const SizedBox(height: 28),
-          _Feature(icon: Icons.all_inclusive_rounded, text: 'Unlimited file sizes'),
-          _Feature(icon: Icons.merge_type_rounded, text: 'Unlimited batch merging'),
-          _Feature(icon: Icons.branding_watermark_rounded, text: 'No watermarks on output'),
+          _Feature(
+            icon: Icons.all_inclusive_rounded,
+            text: 'Unlimited file sizes',
+          ),
+          _Feature(
+            icon: Icons.merge_type_rounded,
+            text: 'Unlimited batch merging',
+          ),
+          _Feature(
+            icon: Icons.branding_watermark_rounded,
+            text: 'No watermarks on output',
+          ),
           _Feature(icon: Icons.block_rounded, text: 'Remove all ads'),
           const SizedBox(height: 28),
           GestureDetector(
@@ -505,7 +512,9 @@ class _PaywallSheet extends StatelessWidget {
               context.read<AppProvider>().unlockPro();
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('🎉 Pro unlocked! Enjoy unlimited access.')),
+                const SnackBar(
+                  content: Text('🎉 Pro unlocked! Enjoy unlimited access.'),
+                ),
               );
             },
             child: Container(
@@ -539,7 +548,10 @@ class _PaywallSheet extends StatelessWidget {
           const SizedBox(height: 12),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Maybe later', style: TextStyle(color: AppColors.textMuted)),
+            child: const Text(
+              'Maybe later',
+              style: TextStyle(color: AppColors.textMuted),
+            ),
           ),
           const SizedBox(height: 8),
         ],

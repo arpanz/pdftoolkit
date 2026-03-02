@@ -12,7 +12,11 @@ class ProcessingDialog extends StatefulWidget {
     this.subtitle = 'Processing your PDF at native speed',
   });
 
-  static Future<void> show(BuildContext context, {String? title, String? subtitle}) {
+  static Future<void> show(
+    BuildContext context, {
+    String? title,
+    String? subtitle,
+  }) {
     return showDialog(
       context: context,
       barrierDismissible: false,
@@ -71,31 +75,34 @@ class _ProcessingDialogState extends State<ProcessingDialog>
           children: [
             // Rust logo / animated icon
             Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: AppColors.primaryGradient,
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withOpacity(0.4),
-                    blurRadius: 20,
-                    spreadRadius: 2,
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: AppColors.primaryGradient,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.4),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: const Icon(
-                Icons.bolt_rounded,
-                color: Colors.white,
-                size: 36,
-              ),
-            )
+                  child: const Icon(
+                    Icons.bolt_rounded,
+                    color: Colors.white,
+                    size: 36,
+                  ),
+                )
                 .animate(onPlay: (c) => c.repeat())
-                .shimmer(duration: 1500.ms, color: Colors.white.withOpacity(0.3)),
+                .shimmer(
+                  duration: 1500.ms,
+                  color: Colors.white.withOpacity(0.3),
+                ),
             const SizedBox(height: 24),
 
             // Title
@@ -137,13 +144,13 @@ class _ProcessingDialogState extends State<ProcessingDialog>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: AppColors.success,
-                      shape: BoxShape.circle,
-                    ),
-                  )
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: AppColors.success,
+                          shape: BoxShape.circle,
+                        ),
+                      )
                       .animate(onPlay: (c) => c.repeat())
                       .fadeIn(duration: 600.ms)
                       .then()

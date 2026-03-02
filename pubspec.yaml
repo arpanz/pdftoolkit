@@ -14,8 +14,8 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   # File picking & sharing
-  file_picker: ^8.1.2
-  share_plus: ^10.0.0
+  file_picker: ^10.3.10
+  share_plus: ^12.0.1
   open_filex: ^4.3.4
 
   # Image handling
@@ -33,11 +33,11 @@ dependencies:
 
   # UI enhancements
   flutter_animate: ^4.5.0
-  google_fonts: ^6.2.1
+  google_fonts: ^8.0.2
   lottie: ^3.1.2
 
   # Ads
-  google_mobile_ads: ^5.1.0
+  google_mobile_ads: ^7.0.0
 
   # In-app purchases
   in_app_purchase: ^3.2.0
@@ -46,15 +46,23 @@ dependencies:
   url_launcher: ^6.3.0
 
   # Intl for date formatting
-  intl: ^0.19.0
+  intl: ^0.20.2
+  uuid: ^4.5.1
 
   # Flutter Rust Bridge
-  flutter_rust_bridge: ^2.0.0
+  flutter_rust_bridge: 2.11.1
+  freezed_annotation: ^3.1.0
+  rust_lib_pdftoolkit:
+    path: rust_builder
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
+  build_runner: ^2.7.1
+  freezed: ^3.2.3
+  integration_test:
+    sdk: flutter
 
 flutter:
   uses-material-design: true

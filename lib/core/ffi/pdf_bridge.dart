@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import '../../rust/frb_generated.dart';
+import 'package:pdftoolkit/rust/frb_generated.dart';
+import 'package:pdftoolkit/rust/api/pdf_ops.dart';
 import '../models/pdf_file_model.dart';
 
 /// Dart wrapper around the Rust PDF engine.
@@ -63,16 +64,19 @@ class PdfBridge {
       // Free tier checks
       if (!isPro) {
         final sizeError = validateFileSizeForFree(paths);
-        if (sizeError != null) return ProcessingResult(success: false, error: sizeError);
+        if (sizeError != null)
+          return ProcessingResult(success: false, error: sizeError);
 
         final countError = validateMergeCountForFree(paths.length);
-        if (countError != null) return ProcessingResult(success: false, error: countError);
+        if (countError != null)
+          return ProcessingResult(success: false, error: countError);
       }
 
       final outputPath = await generateOutputPath('merged');
       final result = await mergePdfs(
         paths: paths,
         outputPath: outputPath,
+        addWatermark: !isPro,
       );
 
       if (!result.success) {

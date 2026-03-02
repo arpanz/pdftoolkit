@@ -12,7 +12,7 @@ import '../../core/ffi/pdf_bridge.dart';
 import '../../shared/widgets/gradient_button.dart';
 import '../../shared/widgets/processing_dialog.dart';
 import '../../shared/widgets/success_screen.dart';
-import '../../rust/frb_generated.dart';
+import 'package:pdftoolkit/rust/api/pdf_ops.dart';
 
 class ProtectScreen extends StatefulWidget {
   const ProtectScreen({super.key});
@@ -56,22 +56,24 @@ class _ProtectScreenState extends State<ProtectScreen> {
 
     final password = _passwordController.text.trim();
     if (password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a password.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter a password.')));
       return;
     }
 
     if (password != _confirmController.text.trim()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Passwords do not match.')));
       return;
     }
 
     if (password.length < 4) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password must be at least 4 characters.')),
+        const SnackBar(
+          content: Text('Password must be at least 4 characters.'),
+        ),
       );
       return;
     }
@@ -83,7 +85,11 @@ class _ProtectScreenState extends State<ProtectScreen> {
       final size = File(_selectedFile!).lengthSync() / (1024 * 1024);
       if (size > 5) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('File is ${size.toStringAsFixed(1)}MB. Free tier supports up to 5MB.')),
+          SnackBar(
+            content: Text(
+              'File is ${size.toStringAsFixed(1)}MB. Free tier supports up to 5MB.',
+            ),
+          ),
         );
         return;
       }
@@ -123,7 +129,7 @@ class _ProtectScreenState extends State<ProtectScreen> {
           pageCount: result.pageCount,
           operation: PdfOperation.protect,
           createdAt: DateTime.now(),
-          processingMs: result.processingMs,
+          processingMs: result.processingMs.toInt(),
         );
         await appProvider.addFile(model);
 
@@ -134,7 +140,7 @@ class _ProtectScreenState extends State<ProtectScreen> {
               builder: (_) => SuccessScreen(
                 outputPath: result.outputPath,
                 pageCount: result.pageCount,
-                processingMs: result.processingMs,
+                processingMs: result.processingMs.toInt(),
                 operationLabel: 'Protect',
                 onDone: () => Navigator.of(context).popUntil((r) => r.isFirst),
               ),
@@ -144,16 +150,18 @@ class _ProtectScreenState extends State<ProtectScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${result.error ?? "Unknown error"}')),
+            SnackBar(
+              content: Text('Error: ${result.error ?? "Unknown error"}'),
+            ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -188,7 +196,9 @@ class _ProtectScreenState extends State<ProtectScreen> {
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+                border: Border.all(
+                  color: const Color(0xFF10B981).withOpacity(0.3),
+                ),
               ),
               child: const Row(
                 children: [
@@ -208,7 +218,10 @@ class _ProtectScreenState extends State<ProtectScreen> {
                         ),
                         Text(
                           'Secure your PDF with a strong password',
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -230,8 +243,10 @@ class _ProtectScreenState extends State<ProtectScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            _FilePicker(selectedFile: _selectedFile, onPick: _pickFile)
-                .animate().fadeIn(delay: 100.ms),
+            _FilePicker(
+              selectedFile: _selectedFile,
+              onPick: _pickFile,
+            ).animate().fadeIn(delay: 100.ms),
 
             const SizedBox(height: 24),
 
@@ -252,13 +267,19 @@ class _ProtectScreenState extends State<ProtectScreen> {
               style: const TextStyle(color: AppColors.textPrimary),
               decoration: InputDecoration(
                 hintText: 'Enter password',
-                prefixIcon: const Icon(Icons.key_rounded, color: AppColors.primary),
+                prefixIcon: const Icon(
+                  Icons.key_rounded,
+                  color: AppColors.primary,
+                ),
                 suffixIcon: IconButton(
                   icon: Icon(
-                    _obscurePassword ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                    _obscurePassword
+                        ? Icons.visibility_rounded
+                        : Icons.visibility_off_rounded,
                     color: AppColors.textMuted,
                   ),
-                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
                 ),
               ),
             ).animate().fadeIn(delay: 200.ms),
@@ -271,13 +292,19 @@ class _ProtectScreenState extends State<ProtectScreen> {
               style: const TextStyle(color: AppColors.textPrimary),
               decoration: InputDecoration(
                 hintText: 'Confirm password',
-                prefixIcon: const Icon(Icons.key_rounded, color: AppColors.primary),
+                prefixIcon: const Icon(
+                  Icons.key_rounded,
+                  color: AppColors.primary,
+                ),
                 suffixIcon: IconButton(
                   icon: Icon(
-                    _obscureConfirm ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                    _obscureConfirm
+                        ? Icons.visibility_rounded
+                        : Icons.visibility_off_rounded,
                     color: AppColors.textMuted,
                   ),
-                  onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                  onPressed: () =>
+                      setState(() => _obscureConfirm = !_obscureConfirm),
                 ),
               ),
             ).animate().fadeIn(delay: 300.ms),
@@ -313,7 +340,9 @@ class _FilePicker extends StatelessWidget {
           color: AppColors.bgCard,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: selectedFile != null ? AppColors.primary.withOpacity(0.5) : AppColors.border,
+            color: selectedFile != null
+                ? AppColors.primary.withOpacity(0.5)
+                : AppColors.border,
           ),
         ),
         child: Row(
@@ -331,24 +360,34 @@ class _FilePicker extends StatelessWidget {
                 selectedFile != null
                     ? Icons.picture_as_pdf_rounded
                     : Icons.upload_file_rounded,
-                color: selectedFile != null ? AppColors.error : AppColors.primary,
+                color: selectedFile != null
+                    ? AppColors.error
+                    : AppColors.primary,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                selectedFile != null ? p.basename(selectedFile!) : 'Tap to select PDF',
+                selectedFile != null
+                    ? p.basename(selectedFile!)
+                    : 'Tap to select PDF',
                 style: TextStyle(
-                  color: selectedFile != null ? AppColors.textPrimary : AppColors.textMuted,
+                  color: selectedFile != null
+                      ? AppColors.textPrimary
+                      : AppColors.textMuted,
                   fontSize: 14,
-                  fontWeight: selectedFile != null ? FontWeight.w600 : FontWeight.normal,
+                  fontWeight: selectedFile != null
+                      ? FontWeight.w600
+                      : FontWeight.normal,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
             Icon(
-              selectedFile != null ? Icons.swap_horiz_rounded : Icons.chevron_right_rounded,
+              selectedFile != null
+                  ? Icons.swap_horiz_rounded
+                  : Icons.chevron_right_rounded,
               color: AppColors.textMuted,
             ),
           ],

@@ -35,10 +35,10 @@ class FilesScreen extends StatelessWidget {
               itemCount: files.length,
               itemBuilder: (context, index) {
                 return _FileCard(
-                  file: files[index],
-                  onDelete: () => _confirmDelete(context, files[index]),
-                  onOpen: () => OpenFilex.open(files[index].path),
-                )
+                      file: files[index],
+                      onDelete: () => _confirmDelete(context, files[index]),
+                      onOpen: () => OpenFilex.open(files[index].path),
+                    )
                     .animate()
                     .fadeIn(delay: Duration(milliseconds: 30 * index))
                     .slideX(begin: 0.1);
@@ -64,7 +64,10 @@ class FilesScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textMuted),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -228,7 +231,10 @@ class _FileCard extends StatelessWidget {
                       children: [
                         // Operation badge
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: _operationColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
@@ -280,14 +286,20 @@ class _FileCard extends StatelessWidget {
                     color: AppColors.primary,
                     onPressed: onOpen,
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete_outline_rounded, size: 18),
                     color: AppColors.textMuted,
                     onPressed: onDelete,
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
                   ),
                 ],
               ),

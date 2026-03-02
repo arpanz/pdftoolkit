@@ -59,7 +59,8 @@ class PdfFileModel {
 
   String get formattedSize {
     if (sizeBytes < 1024) return '${sizeBytes}B';
-    if (sizeBytes < 1024 * 1024) return '${(sizeBytes / 1024).toStringAsFixed(1)}KB';
+    if (sizeBytes < 1024 * 1024)
+      return '${(sizeBytes / 1024).toStringAsFixed(1)}KB';
     return '${sizeMb.toStringAsFixed(2)}MB';
   }
 
@@ -71,26 +72,26 @@ class PdfFileModel {
   bool get fileExists => File(path).existsSync();
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'path': path,
-        'name': name,
-        'sizeBytes': sizeBytes,
-        'pageCount': pageCount,
-        'operation': operation.index,
-        'createdAt': createdAt.toIso8601String(),
-        'processingMs': processingMs,
-      };
+    'id': id,
+    'path': path,
+    'name': name,
+    'sizeBytes': sizeBytes,
+    'pageCount': pageCount,
+    'operation': operation.index,
+    'createdAt': createdAt.toIso8601String(),
+    'processingMs': processingMs,
+  };
 
   factory PdfFileModel.fromJson(Map<String, dynamic> json) => PdfFileModel(
-        id: json['id'] as String,
-        path: json['path'] as String,
-        name: json['name'] as String,
-        sizeBytes: json['sizeBytes'] as int,
-        pageCount: json['pageCount'] as int,
-        operation: PdfOperation.values[json['operation'] as int],
-        createdAt: DateTime.parse(json['createdAt'] as String),
-        processingMs: json['processingMs'] as int,
-      );
+    id: json['id'] as String,
+    path: json['path'] as String,
+    name: json['name'] as String,
+    sizeBytes: json['sizeBytes'] as int,
+    pageCount: json['pageCount'] as int,
+    operation: PdfOperation.values[json['operation'] as int],
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    processingMs: json['processingMs'] as int,
+  );
 }
 
 class ProcessingResult {

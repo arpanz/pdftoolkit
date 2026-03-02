@@ -1,0 +1,6 @@
+rust_root: rust
+rust_input: crate::api
+dart_output: lib/rust
+c_output: rust/frb_generated.h
+auto_upgrade_dependency: false
+type_64bit_int: true

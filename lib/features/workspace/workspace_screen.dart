@@ -64,7 +64,10 @@ class WorkspaceScreen extends StatelessWidget {
                   onTap: () => _showProPaywall(context),
                   child: Container(
                     margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
@@ -74,7 +77,11 @@ class WorkspaceScreen extends StatelessWidget {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 14),
+                        Icon(
+                          Icons.workspace_premium_rounded,
+                          color: Colors.white,
+                          size: 14,
+                        ),
                         SizedBox(width: 4),
                         Text(
                           'PRO',
@@ -107,7 +114,8 @@ class WorkspaceScreen extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // Free tier info (if not pro)
-                if (!isPro) _FreeTierCard(onUpgrade: () => _showProPaywall(context)),
+                if (!isPro)
+                  _FreeTierCard(onUpgrade: () => _showProPaywall(context)),
               ]),
             ),
           ),
@@ -269,10 +277,7 @@ class _ToolCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [
-                      gradient[0].withOpacity(0.15),
-                      Colors.transparent,
-                    ],
+                    colors: [gradient[0].withOpacity(0.15), Colors.transparent],
                   ),
                 ),
               ),
@@ -379,10 +384,7 @@ class _CrossPromoBanner extends StatelessWidget {
                 ),
                 Text(
                   'Try our Offline Invoice Maker →',
-                  style: TextStyle(
-                    color: Color(0xFF10B981),
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Color(0xFF10B981), fontSize: 12),
                 ),
               ],
             ),
@@ -417,16 +419,18 @@ class _FreeTierCard extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFF59E0B).withOpacity(0.3),
-        ),
+        border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Row(
             children: [
-              Icon(Icons.workspace_premium_rounded, color: Color(0xFFF59E0B), size: 20),
+              Icon(
+                Icons.workspace_premium_rounded,
+                color: Color(0xFFF59E0B),
+                size: 20,
+              ),
               SizedBox(width: 8),
               Text(
                 'Free Tier Limits',
@@ -439,11 +443,17 @@ class _FreeTierCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          _LimitRow(icon: Icons.merge_type_rounded, text: 'Max 3 files per merge'),
+          _LimitRow(
+            icon: Icons.merge_type_rounded,
+            text: 'Max 3 files per merge',
+          ),
           const SizedBox(height: 6),
           _LimitRow(icon: Icons.storage_rounded, text: 'Max 5MB per file'),
           const SizedBox(height: 6),
-          _LimitRow(icon: Icons.branding_watermark_rounded, text: 'Watermark on output'),
+          _LimitRow(
+            icon: Icons.branding_watermark_rounded,
+            text: 'Watermark on output',
+          ),
           const SizedBox(height: 16),
           GestureDetector(
             onTap: onUpgrade,
@@ -488,10 +498,7 @@ class _LimitRow extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           text,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 12,
-          ),
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
         ),
       ],
     );
@@ -556,9 +563,18 @@ class _ProPaywallSheet extends StatelessWidget {
           const SizedBox(height: 28),
 
           // Features
-          _ProFeature(icon: Icons.all_inclusive_rounded, text: 'Unlimited file sizes'),
-          _ProFeature(icon: Icons.merge_type_rounded, text: 'Unlimited batch merging'),
-          _ProFeature(icon: Icons.branding_watermark_rounded, text: 'No watermarks'),
+          _ProFeature(
+            icon: Icons.all_inclusive_rounded,
+            text: 'Unlimited file sizes',
+          ),
+          _ProFeature(
+            icon: Icons.merge_type_rounded,
+            text: 'Unlimited batch merging',
+          ),
+          _ProFeature(
+            icon: Icons.branding_watermark_rounded,
+            text: 'No watermarks',
+          ),
           _ProFeature(icon: Icons.block_rounded, text: 'Remove all ads'),
           const SizedBox(height: 28),
 
@@ -568,7 +584,9 @@ class _ProPaywallSheet extends StatelessWidget {
               context.read<AppProvider>().unlockPro();
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('🎉 Pro unlocked! Enjoy unlimited access.')),
+                const SnackBar(
+                  content: Text('🎉 Pro unlocked! Enjoy unlimited access.'),
+                ),
               );
             },
             child: Container(

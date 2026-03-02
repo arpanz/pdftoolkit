@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "rust"
+name = "rust_lib_pdftoolkit"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-flutter_rust_bridge = "2"
+flutter_rust_bridge = "=2.11.1"
 lopdf = { version = "0.34", features = ["nom_parser"] }
 image = { version = "0.25", features = ["jpeg", "png", "gif", "bmp", "tiff", "webp"] }
 anyhow = "1"

@@ -54,17 +54,18 @@ fn remap_ids(doc: &mut Document, start_id: u32) -> u32 {
 
     // Rebuild objects with new IDs
     let mut new_objects: BTreeMap<ObjectId, Object> = BTreeMap::new();
-    for (old_id, obj) in doc.objects.drain(..) {
-        let new_id = id_map[&old_id];
-        let remapped = remap_object(obj, &id_map);
-        new_objects.insert(new_id, remapped);
+    let old_ids: Vec<ObjectId> = doc.objects.keys().copied().collect();
+    for old_id in old_ids {
+        if let Some(obj) = doc.objects.remove(&old_id) {
+            let new_id = id_map[&old_id];
+            let remapped = remap_object(obj, &id_map);
+            new_objects.insert(new_id, remapped);
+        }
     }
     doc.objects = new_objects;
 
     // Remap trailer
-    if let Ok(trailer) = doc.trailer.as_dict_mut() {
-        remap_dict(trailer, &id_map);
-    }
+    remap_dict(&mut doc.trailer, &id_map);
 
     next
 }
@@ -134,7 +135,7 @@ fn merge_pdfs_inner(paths: Vec<String>, output_path: &str, add_watermark: bool) 
         next_id = remap_ids(&mut doc, next_id);
 
         // Collect page IDs from this document
-        let doc_page_ids: Vec<ObjectId> = doc.get_pages().keys().cloned().collect();
+        let doc_page_ids: Vec<ObjectId> = doc.get_pages().values().cloned().collect();
         total_pages += doc_page_ids.len() as u32;
 
         for page_id in &doc_page_ids {
@@ -193,7 +194,7 @@ fn split_pdf_inner(input_path: &str, pages: &[u32], output_path: &str, add_water
     let mut doc = Document::load(input_path)?;
     doc.decompress();
 
-    let all_pages: Vec<ObjectId> = doc.get_pages().keys().cloned().collect();
+    let all_pages: Vec<ObjectId> = doc.get_pages().values().cloned().collect();
     let max_page = all_pages.len() as u32;
 
     // Validate page numbers
@@ -544,7 +545,7 @@ fn add_watermark_to_page(doc: &mut Document, page_id: ObjectId) -> Result<()> {
             }
 
             // Append content
-            let existing_contents = dict.get(b"Contents").cloned();
+            let existing_contents = dict.get(b"Contents").ok().cloned();
             match existing_contents {
                 Some(Object::Reference(existing_id)) => {
                     dict.set(
