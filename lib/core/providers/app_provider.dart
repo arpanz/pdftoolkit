@@ -4,29 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/pdf_file_model.dart';
 
-enum AppThemeMode {
-  classicBlue,
-  amberTeal,
-  lavenderMint,
-  coralIndigo,
-  forestTerracotta,
-}
-
 class AppProvider extends ChangeNotifier {
   static const String _filesKey = 'pdf_files';
   static const String _proKey = 'is_pro';
   static const String _darkModeKey = 'dark_mode';
-  static const String _themeModeKey = 'theme_mode';
 
   bool _isPro = false;
   bool _isDarkMode = true;
-  AppThemeMode _themeMode = AppThemeMode.amberTeal;
   List<PdfFileModel> _files = [];
   bool _isLoading = false;
 
   bool get isPro => _isPro;
   bool get isDarkMode => _isDarkMode;
-  AppThemeMode get themeMode => _themeMode;
   List<PdfFileModel> get files => List.unmodifiable(_files);
   bool get isLoading => _isLoading;
 
@@ -34,29 +23,24 @@ class AppProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _isPro = prefs.getBool(_proKey) ?? false;
     _isDarkMode = prefs.getBool(_darkModeKey) ?? true;
-    final themeIndex = prefs.getInt(_themeModeKey) ?? 1; // Default to Amber Teal
-    _themeMode = AppThemeMode.values[themeIndex];
     await _loadFiles(prefs);
     notifyListeners();
   }
 
   Future<void> _loadFiles(SharedPreferences prefs) async {
     final raw = prefs.getStringList(_filesKey) ?? [];
-    _files =
-        raw
-            .map((s) {
-              try {
-                return PdfFileModel.fromJson(
-                  jsonDecode(s) as Map<String, dynamic>,
-                );
-              } catch (_) {
-                return null;
-              }
-            })
-            .whereType<PdfFileModel>()
-            .where((f) => File(f.path).existsSync())
-            .toList()
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    _files = raw
+        .map((s) {
+          try {
+            return PdfFileModel.fromJson(jsonDecode(s) as Map<String, dynamic>);
+          } catch (_) {
+            return null;
+          }
+        })
+        .whereType<PdfFileModel>()
+        .where((f) => File(f.path).existsSync())
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
   }
 
   Future<void> _saveFiles() async {
@@ -94,13 +78,6 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setThemeMode(AppThemeMode mode) async {
-    _themeMode = mode;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_themeModeKey, mode.index);
-    notifyListeners();
-  }
-
   Future<void> unlockPro() async {
     _isPro = true;
     final prefs = await SharedPreferences.getInstance();
@@ -113,7 +90,6 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Refresh file list (remove deleted files).
   Future<void> refresh() async {
     _files = _files.where((f) => File(f.path).existsSync()).toList();
     await _saveFiles();
