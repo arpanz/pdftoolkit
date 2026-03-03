@@ -19,10 +19,12 @@ class WorkspaceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isPro = context.watch<AppProvider>().isPro;
+    final provider = context.watch<AppProvider>();
+    final isPro = provider.isPro;
+    final isDark = provider.isDarkMode;
 
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -39,11 +41,17 @@ class WorkspaceScreen extends StatelessWidget {
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [
-                          AppColors.bgDark,
-                          AppColors.bgCard.withOpacity(0.5),
-                          AppColors.bgDark,
-                        ],
+                        colors: isDark
+                            ? [
+                                AppColors.bgDark,
+                                AppColors.bgCard.withOpacity(0.5),
+                                AppColors.bgDark,
+                              ]
+                            : [
+                                AppColors.bgLight,
+                                AppColors.bgCardLight.withOpacity(0.5),
+                                AppColors.bgLight,
+                              ],
                       ),
                     ),
                   ),
@@ -113,10 +121,12 @@ class WorkspaceScreen extends StatelessWidget {
                             color: Colors.white, size: 20),
                       ),
                       const SizedBox(width: 12),
-                      const Text(
+                      Text(
                         'BatchPDF',
                         style: TextStyle(
-                          color: AppColors.textPrimary,
+                          color: isDark
+                              ? AppColors.textPrimary
+                              : AppColors.textPrimaryLight,
                           fontSize: 24,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.5,
@@ -143,6 +153,48 @@ class WorkspaceScreen extends StatelessWidget {
               ),
             ),
             actions: [
+              // Theme toggle
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  context.read<AppProvider>().toggleDarkMode();
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(right: 12, top: 12),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.bgCard
+                        : AppColors.bgCardLight,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark
+                          ? AppColors.border
+                          : AppColors.borderLightMode,
+                    ),
+                  ),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, animation) {
+                      return RotationTransition(
+                        turns: animation,
+                        child: FadeTransition(
+                          opacity: animation,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: Icon(
+                      isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                      key: ValueKey(isDark),
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppColors.textSecondaryLight,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ).animate().fadeIn(delay: 100.ms).scale(delay: 100.ms),
               if (!isPro)
                 GestureDetector(
                   onTap: () => _showProPaywall(context),
@@ -184,14 +236,14 @@ class WorkspaceScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                const _SectionHeader(title: 'PDF TOOLS'),
+                _SectionHeader(title: 'PDF TOOLS', isDark: isDark),
                 const SizedBox(height: 16),
-                const _ToolsGrid(),
+                _ToolsGrid(isDark: isDark),
                 const SizedBox(height: 24),
-                const _CrossPromoBanner(),
+                _CrossPromoBanner(isDark: isDark),
                 const SizedBox(height: 24),
                 if (!isPro)
-                  _FreeTierCard(onUpgrade: () => _showProPaywall(context)),
+                  _FreeTierCard(onUpgrade: () => _showProPaywall(context), isDark: isDark),
               ]),
             ),
           ),
@@ -212,14 +264,15 @@ class WorkspaceScreen extends StatelessWidget {
 
 class _SectionHeader extends StatelessWidget {
   final String title;
-  const _SectionHeader({required this.title});
+  final bool isDark;
+  const _SectionHeader({required this.title, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: const TextStyle(
-        color: AppColors.textSecondary,
+      style: TextStyle(
+        color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
         fontSize: 12,
         fontWeight: FontWeight.w600,
         letterSpacing: 1.2,
@@ -229,7 +282,8 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _ToolsGrid extends StatelessWidget {
-  const _ToolsGrid();
+  final bool isDark;
+  const _ToolsGrid({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -360,6 +414,8 @@ class _ToolCardState extends State<_ToolCard> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTapDown: (_) {
         HapticFeedback.lightImpact();
@@ -376,9 +432,11 @@ class _ToolCardState extends State<_ToolCard> {
         curve: Curves.easeOut,
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.bgCard,
+            color: isDark ? AppColors.bgCard : AppColors.bgCardLight,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(
+              color: isDark ? AppColors.border : AppColors.borderLightMode,
+            ),
           ),
           child: Stack(
             children: [
@@ -421,8 +479,10 @@ class _ToolCardState extends State<_ToolCard> {
                     const Spacer(),
                     Text(
                       widget.title,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: isDark
+                            ? AppColors.textPrimary
+                            : AppColors.textPrimaryLight,
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                       ),
@@ -430,7 +490,12 @@ class _ToolCardState extends State<_ToolCard> {
                     const SizedBox(height: 4),
                     Text(
                       widget.subtitle,
-                      style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                      style: TextStyle(
+                        color: isDark
+                            ? AppColors.textMuted
+                            : AppColors.textMutedLight,
+                        fontSize: 11,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -446,16 +511,19 @@ class _ToolCardState extends State<_ToolCard> {
 }
 
 class _CrossPromoBanner extends StatelessWidget {
-  const _CrossPromoBanner();
+  final bool isDark;
+  const _CrossPromoBanner({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
+        color: isDark ? AppColors.bgCard : AppColors.bgCardLight,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(
+          color: isDark ? AppColors.border : AppColors.borderLightMode,
+        ),
       ),
       child: Row(
         children: [
@@ -469,22 +537,25 @@ class _CrossPromoBanner extends StatelessWidget {
                 color: Color(0xFF10B981), size: 20),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Need to bill a client?',
                     style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: isDark
+                            ? AppColors.textPrimary
+                            : AppColors.textPrimaryLight,
                         fontSize: 13,
                         fontWeight: FontWeight.w600)),
-                Text('Try our Offline Invoice Maker →',
+                const Text('Try our Offline Invoice Maker →',
                     style: TextStyle(color: Color(0xFF10B981), fontSize: 12)),
               ],
             ),
           ),
-          const Icon(Icons.arrow_forward_ios_rounded,
-              color: AppColors.textMuted, size: 14),
+          Icon(Icons.arrow_forward_ios_rounded,
+              color: isDark ? AppColors.textMuted : AppColors.textMutedLight,
+              size: 14),
         ],
       ),
     ).animate().fadeIn(delay: 300.ms);
@@ -493,7 +564,8 @@ class _CrossPromoBanner extends StatelessWidget {
 
 class _FreeTierCard extends StatelessWidget {
   final VoidCallback onUpgrade;
-  const _FreeTierCard({required this.onUpgrade});
+  final bool isDark;
+  const _FreeTierCard({required this.onUpgrade, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -569,13 +641,19 @@ class _LimitRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
-        Icon(icon, color: AppColors.textMuted, size: 14),
+        Icon(icon,
+            color: isDark ? AppColors.textMuted : AppColors.textMutedLight,
+            size: 14),
         const SizedBox(width: 8),
         Text(text,
-            style: const TextStyle(
-                color: AppColors.textSecondary, fontSize: 12)),
+            style: TextStyle(
+                color: isDark
+                    ? AppColors.textSecondary
+                    : AppColors.textSecondaryLight,
+                fontSize: 12)),
       ],
     );
   }
@@ -586,10 +664,12 @@ class _ProPaywallSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.bgCard : AppColors.bgCardLight,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: const EdgeInsets.all(32),
       child: Column(
@@ -598,7 +678,7 @@ class _ProPaywallSheet extends StatelessWidget {
           Container(
             width: 40, height: 4,
             decoration: BoxDecoration(
-                color: AppColors.border,
+                color: isDark ? AppColors.border : AppColors.borderLightMode,
                 borderRadius: BorderRadius.circular(2)),
           ),
           const SizedBox(height: 24),
@@ -613,15 +693,20 @@ class _ProPaywallSheet extends StatelessWidget {
                 color: Colors.white, size: 36),
           ),
           const SizedBox(height: 24),
-          const Text('Unlock Pro Workspace',
+          Text('Unlock Pro Workspace',
               style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: isDark
+                      ? AppColors.textPrimary
+                      : AppColors.textPrimaryLight,
                   fontSize: 22,
                   fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
-          const Text('One-time purchase. No subscription.',
+          Text('One-time purchase. No subscription.',
               style: TextStyle(
-                  color: AppColors.textSecondary, fontSize: 14)),
+                  color: isDark
+                      ? AppColors.textSecondary
+                      : AppColors.textSecondaryLight,
+                  fontSize: 14)),
           const SizedBox(height: 24),
           const _ProFeature(
               icon: Icons.all_inclusive_rounded,
@@ -671,8 +756,11 @@ class _ProPaywallSheet extends StatelessWidget {
           const SizedBox(height: 16),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Maybe later',
-                style: TextStyle(color: AppColors.textMuted)),
+            child: Text('Maybe later',
+                style: TextStyle(
+                    color: isDark
+                        ? AppColors.textMuted
+                        : AppColors.textMutedLight)),
           ),
           const SizedBox(height: 8),
         ],
@@ -688,6 +776,7 @@ class _ProFeature extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -702,8 +791,10 @@ class _ProFeature extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(text,
-              style: const TextStyle(
-                  color: AppColors.textPrimary,
+              style: TextStyle(
+                  color: isDark
+                      ? AppColors.textPrimary
+                      : AppColors.textPrimaryLight,
                   fontSize: 14,
                   fontWeight: FontWeight.w500)),
         ],
