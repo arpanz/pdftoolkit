@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
@@ -91,11 +92,11 @@ class WorkspaceScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                _SectionHeader(title: 'PDF TOOLS'),
-                const SizedBox(height: 12),
-                _ToolsGrid(),
+                const _SectionHeader(title: 'PDF TOOLS'),
+                const SizedBox(height: 16),
+                const _ToolsGrid(),
                 const SizedBox(height: 24),
-                _CrossPromoBanner(),
+                const _CrossPromoBanner(),
                 const SizedBox(height: 24),
                 if (!isPro)
                   _FreeTierCard(onUpgrade: () => _showProPaywall(context)),
@@ -211,9 +212,9 @@ class _ToolsGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.1,
+        crossAxisSpacing: 16, // Improved from 12
+        mainAxisSpacing: 16,  // Improved from 12
+        childAspectRatio: 1.25, // Improved from 1.1
       ),
       itemCount: tools.length,
       itemBuilder: (context, index) {
@@ -226,7 +227,7 @@ class _ToolsGrid extends StatelessWidget {
   }
 }
 
-class _ToolCard extends StatelessWidget {
+class _ToolCard extends StatefulWidget {
   final IconData icon;
   final String title;
   final String subtitle;
@@ -241,9 +242,16 @@ class _ToolCard extends StatelessWidget {
     required this.route,
   });
 
+  @override
+  State<_ToolCard> createState() => _ToolCardState();
+}
+
+class _ToolCardState extends State<_ToolCard> {
+  bool _isPressed = false;
+
   void _navigate(BuildContext context) {
     Widget screen;
-    switch (route) {
+    switch (widget.route) {
       case 'merge': screen = const MergeScreen(); break;
       case 'split': screen = const SplitScreen(); break;
       case 'protect': screen = const ProtectScreen(); break;
@@ -261,71 +269,84 @@ class _ToolCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => _navigate(context),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.bgCard,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: -20, right: -20,
-              child: Container(
-                width: 80, height: 80,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [gradient[0].withOpacity(0.15), Colors.transparent],
+      onTapDown: (_) {
+        HapticFeedback.lightImpact();
+        setState(() => _isPressed = true);
+      },
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        _navigate(context);
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedScale(
+        scale: _isPressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOut,
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.bgCard,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                top: -20, right: -20,
+                child: Container(
+                  width: 80, height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [widget.gradient[0].withOpacity(0.15), Colors.transparent],
+                    ),
                   ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 48, height: 48,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: gradient,
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: gradient[0].withOpacity(0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+              Padding(
+                padding: const EdgeInsets.all(16), // Consistent 8px grid
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 48, height: 48,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: widget.gradient,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                      ],
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: widget.gradient[0].withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Icon(widget.icon, color: Colors.white, size: 24),
                     ),
-                    child: Icon(icon, color: Colors.white, size: 24),
-                  ),
-                  const Spacer(),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                    const Spacer(),
+                    Text(
+                      widget.title,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.subtitle,
+                      style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -385,7 +406,7 @@ class _FreeTierCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16), // Standardized to 8px grid
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -414,11 +435,11 @@ class _FreeTierCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          _LimitRow(icon: Icons.merge_type_rounded, text: 'Max 3 files per merge'),
+          const _LimitRow(icon: Icons.merge_type_rounded, text: 'Max 3 files per merge'),
           const SizedBox(height: 6),
-          _LimitRow(icon: Icons.storage_rounded, text: 'Max 5MB per file'),
+          const _LimitRow(icon: Icons.storage_rounded, text: 'Max 5MB per file'),
           const SizedBox(height: 6),
-          _LimitRow(
+          const _LimitRow(
               icon: Icons.branding_watermark_rounded,
               text: 'Watermark on output'),
           const SizedBox(height: 16),
@@ -478,7 +499,7 @@ class _ProPaywallSheet extends StatelessWidget {
         color: AppColors.bgCard,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      padding: const EdgeInsets.all(28),
+      padding: const EdgeInsets.all(32), // Standardized to 8px grid
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -499,7 +520,7 @@ class _ProPaywallSheet extends StatelessWidget {
             child: const Icon(Icons.workspace_premium_rounded,
                 color: Colors.white, size: 36),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           const Text('Unlock Pro Workspace',
               style: TextStyle(
                   color: AppColors.textPrimary,
@@ -509,18 +530,18 @@ class _ProPaywallSheet extends StatelessWidget {
           const Text('One-time purchase. No subscription.',
               style: TextStyle(
                   color: AppColors.textSecondary, fontSize: 14)),
-          const SizedBox(height: 28),
-          _ProFeature(
+          const SizedBox(height: 24),
+          const _ProFeature(
               icon: Icons.all_inclusive_rounded,
               text: 'Unlimited file sizes'),
-          _ProFeature(
+          const _ProFeature(
               icon: Icons.merge_type_rounded,
               text: 'Unlimited batch merging'),
-          _ProFeature(
+          const _ProFeature(
               icon: Icons.branding_watermark_rounded,
               text: 'No watermarks'),
-          _ProFeature(icon: Icons.block_rounded, text: 'Remove all ads'),
-          const SizedBox(height: 28),
+          const _ProFeature(icon: Icons.block_rounded, text: 'Remove all ads'),
+          const SizedBox(height: 24),
           GestureDetector(
             onTap: () {
               context.read<AppProvider>().unlockPro();
@@ -555,7 +576,7 @@ class _ProPaywallSheet extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Maybe later',
