@@ -26,32 +26,117 @@ class WorkspaceScreen extends StatelessWidget {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 100,
+            expandedHeight: 140,
             floating: true,
             snap: true,
-            backgroundColor: AppColors.bgDark,
+            backgroundColor: Colors.transparent,
             flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
-              title: Row(
+              background: Stack(
                 children: [
+                  // Gradient background
                   Container(
-                    width: 32,
-                    height: 32,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: AppColors.primaryGradient),
-                      borderRadius: BorderRadius.circular(8),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppColors.bgDark,
+                          AppColors.bgCard.withOpacity(0.5),
+                          AppColors.bgDark,
+                        ],
+                      ),
                     ),
-                    child: const Icon(Icons.picture_as_pdf_rounded,
-                        color: Colors.white, size: 18),
                   ),
-                  const SizedBox(width: 10),
-                  const Text(
-                    'BatchPDF',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
+                  // Decorative circles
+                  Positioned(
+                    top: -40,
+                    right: -40,
+                    child: Container(
+                      width: 160,
+                      height: 160,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            AppColors.primary.withOpacity(0.08),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: -60,
+                    left: -60,
+                    child: Container(
+                      width: 140,
+                      height: 140,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            AppColors.accent.withOpacity(0.06),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: AppColors.primaryGradient,
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.picture_as_pdf_rounded,
+                            color: Colors.white, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'BatchPDF',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      colors: AppColors.primaryGradient,
+                    ).createShader(bounds),
+                    child: const Text(
+                      'Professional PDF Tools',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
                 ],
@@ -62,34 +147,41 @@ class WorkspaceScreen extends StatelessWidget {
                 GestureDetector(
                   onTap: () => _showProPaywall(context),
                   child: Container(
-                    margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    margin: const EdgeInsets.only(right: 16, top: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                           colors: [Color(0xFFF59E0B), Color(0xFFEF4444)]),
                       borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFF59E0B).withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.workspace_premium_rounded,
-                            color: Colors.white, size: 14),
-                        SizedBox(width: 4),
+                            color: Colors.white, size: 16),
+                        SizedBox(width: 6),
                         Text('PRO',
                             style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 11,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 1)),
                       ],
                     ),
                   ),
-                ),
+                ).animate().fadeIn(delay: 200.ms).scale(delay: 200.ms),
             ],
           ),
 
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 const _SectionHeader(title: 'PDF TOOLS'),
@@ -212,9 +304,9 @@ class _ToolsGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 16, // Improved from 12
-        mainAxisSpacing: 16,  // Improved from 12
-        childAspectRatio: 1.25, // Improved from 1.1
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 1.25,
       ),
       itemCount: tools.length,
       itemBuilder: (context, index) {
@@ -303,7 +395,7 @@ class _ToolCardState extends State<_ToolCard> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(16), // Consistent 8px grid
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -406,7 +498,7 @@ class _FreeTierCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16), // Standardized to 8px grid
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -499,7 +591,7 @@ class _ProPaywallSheet extends StatelessWidget {
         color: AppColors.bgCard,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      padding: const EdgeInsets.all(32), // Standardized to 8px grid
+      padding: const EdgeInsets.all(32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
