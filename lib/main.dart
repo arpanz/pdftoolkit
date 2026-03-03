@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
@@ -14,16 +14,6 @@ Future<void> main() async {
   // Initialize Rust bridge
   await RustLib.init();
 
-  // Set system UI overlay style
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: AppColors.bgCard,
-      systemNavigationBarIconBrightness: Brightness.light,
-    ),
-  );
-
   runApp(
     ChangeNotifierProvider(
       create: (_) => AppProvider()..init(),
@@ -38,6 +28,17 @@ class BatchPdfApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<AppProvider>().isDarkMode;
+
+    // Update system UI overlay style based on theme
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor: isDark ? AppColors.bgCard : AppColors.bgCardLight,
+        systemNavigationBarIconBrightness:
+            isDark ? Brightness.light : Brightness.dark,
+      ),
+    );
 
     return MaterialApp(
       title: 'BatchPDF Pro',
@@ -68,8 +69,10 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: isDark ? AppColors.bgDark : AppColors.bgLight,
       body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: _BottomNav(
         currentIndex: _currentIndex,
@@ -87,10 +90,17 @@ class _BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.bgCard,
-        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.bgCard : AppColors.bgCardLight,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? AppColors.border : AppColors.borderLightMode,
+            width: 1,
+          ),
+        ),
       ),
       child: SafeArea(
         child: Padding(
@@ -144,6 +154,8 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -161,14 +173,18 @@ class _NavItem extends StatelessWidget {
           children: [
             Icon(
               isActive ? activeIcon : icon,
-              color: isActive ? AppColors.primary : AppColors.textMuted,
+              color: isActive
+                  ? AppColors.primary
+                  : (isDark ? AppColors.textMuted : AppColors.textMutedLight),
               size: 22,
             ),
             const SizedBox(height: 3),
             Text(
               label,
               style: TextStyle(
-                color: isActive ? AppColors.primary : AppColors.textMuted,
+                color: isActive
+                    ? AppColors.primary
+                    : (isDark ? AppColors.textMuted : AppColors.textMutedLight),
                 fontSize: 10,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
               ),
