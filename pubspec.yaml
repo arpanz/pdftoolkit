@@ -49,6 +49,9 @@ dependencies:
   intl: ^0.20.2
   uuid: ^4.5.1
 
+  # ZIP archive (used by PDF -> Images screen to bundle pages)
+  archive: ^3.6.1
+
   # Flutter Rust Bridge
   flutter_rust_bridge: 2.11.1
   freezed_annotation: ^3.1.0
