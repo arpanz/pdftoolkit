@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:provider/provider.dart';
@@ -12,70 +13,142 @@ class FilesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final files = context.watch<AppProvider>().files;
+    final provider = context.watch<AppProvider>();
+    final files    = provider.files;
+    final isDark   = provider.isDarkMode;
+    final bg       = isDark ? AppColors.bgDark      : AppColors.bgLight;
+    final textPri  = isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
+    final textMut  = isDark ? AppColors.textMuted   : AppColors.textMutedLight;
 
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        title: const Text('Local Files'),
-        backgroundColor: AppColors.bgDark,
-        actions: [
-          if (files.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.refresh_rounded),
-              onPressed: () => context.read<AppProvider>().refresh(),
-              tooltip: 'Refresh',
+      backgroundColor: bg,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Files',
+                          style: TextStyle(
+                            color: textPri,
+                            fontSize: 32,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -1.2,
+                            height: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          files.isEmpty
+                              ? 'No processed files yet'
+                              : '${files.length} file${files.length == 1 ? '' : 's'}',
+                          style: TextStyle(
+                            color: textMut,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (files.isNotEmpty)
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        context.read<AppProvider>().refresh();
+                      },
+                      child: Container(
+                        width: 40, height: 40,
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.bgCard : AppColors.bgCardLight,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isDark ? AppColors.border : AppColors.borderLightMode,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.refresh_rounded,
+                          color: textMut,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                ],
+              ).animate().fadeIn(duration: 300.ms),
             ),
-        ],
+
+            // Divider
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
+              child: Divider(
+                color: isDark ? AppColors.border : AppColors.borderLightMode,
+                height: 1,
+              ),
+            ),
+
+            // List
+            Expanded(
+              child: files.isEmpty
+                  ? _EmptyState(isDark: isDark)
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: files.length,
+                      itemBuilder: (context, index) {
+                        return _FileRow(
+                          file: files[index],
+                          isDark: isDark,
+                          onDelete: () => _confirmDelete(context, files[index], isDark),
+                          onOpen: () => OpenFilex.open(files[index].path),
+                        ).animate().fadeIn(
+                          delay: Duration(milliseconds: 30 * index),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
-      body: files.isEmpty
-          ? _EmptyState()
-          : ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-              itemCount: files.length,
-              itemBuilder: (context, index) {
-                return _FileCard(
-                      file: files[index],
-                      onDelete: () => _confirmDelete(context, files[index]),
-                      onOpen: () => OpenFilex.open(files[index].path),
-                    )
-                    .animate()
-                    .fadeIn(delay: Duration(milliseconds: 30 * index))
-                    .slideX(begin: 0.1);
-              },
-            ),
     );
   }
 
-  void _confirmDelete(BuildContext context, PdfFileModel file) {
+  void _confirmDelete(BuildContext context, PdfFileModel file, bool isDark) {
+    final textPri = isDark ? AppColors.textPrimary    : AppColors.textPrimaryLight;
+    final textSec = isDark ? AppColors.textSecondary  : AppColors.textSecondaryLight;
+    final bg      = isDark ? AppColors.bgCard         : AppColors.bgCardLight;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.bgCard,
+        backgroundColor: bg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Delete File?',
-          style: TextStyle(color: AppColors.textPrimary),
-        ),
+        title: Text('Delete file?',
+            style: TextStyle(color: textPri, fontSize: 17, fontWeight: FontWeight.w700)),
         content: Text(
-          'This will permanently delete "${file.name}" from your device.',
-          style: const TextStyle(color: AppColors.textSecondary),
+          '"${file.name}" will be permanently removed from your device.',
+          style: TextStyle(color: textSec, fontSize: 14, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: AppColors.textMuted),
-            ),
+            child: Text('Cancel',
+                style: TextStyle(color: isDark ? AppColors.textMuted : AppColors.textMutedLight)),
           ),
-          ElevatedButton(
+          TextButton(
             onPressed: () {
               Navigator.pop(ctx);
               context.read<AppProvider>().deleteFile(file.id);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Delete'),
+            child: const Text('Delete', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -83,112 +156,54 @@ class FilesScreen extends StatelessWidget {
   }
 }
 
+// ── Empty state ───────────────────────────────────────────────────────────────
 class _EmptyState extends StatelessWidget {
+  final bool isDark;
+  const _EmptyState({required this.isDark});
+
   @override
   Widget build(BuildContext context) {
+    final textPri = isDark ? AppColors.textPrimary   : AppColors.textPrimaryLight;
+    final textSec = isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
+
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+        padding: const EdgeInsets.symmetric(horizontal: 40),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Illustration container
             Container(
-              width: 140,
-              height: 140,
+              width: 64, height: 64,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.primary.withOpacity(0.12),
-                    AppColors.primary.withOpacity(0.04),
-                    Colors.transparent,
-                  ],
-                ),
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(18),
               ),
-              child: Center(
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: AppColors.primaryGradient,
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.folder_open_rounded,
-                    color: Colors.white,
-                    size: 40,
-                  ),
-                ),
+              child: const Icon(
+                Icons.folder_open_rounded,
+                color: AppColors.primary,
+                size: 30,
               ),
-            ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
-            const SizedBox(height: 32),
-            const Text(
-              'No Files Yet',
+            ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
+            const SizedBox(height: 20),
+            Text(
+              'No files yet',
               style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
+                color: textPri,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
                 letterSpacing: -0.5,
               ),
-            ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, delay: 200.ms),
-            const SizedBox(height: 12),
-            const Text(
-              'Files you process will appear here.\nGo to Workspace to get started.',
+            ).animate().fadeIn(delay: 150.ms),
+            const SizedBox(height: 8),
+            Text(
+              'Files you process will appear here.\nGo to Tools to get started.',
               style: TextStyle(
-                color: AppColors.textSecondary,
+                color: textSec,
                 fontSize: 14,
-                height: 1.5,
+                height: 1.6,
               ),
               textAlign: TextAlign.center,
-            ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, delay: 300.ms),
-            const SizedBox(height: 32),
-            // Decorative hint
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.bgCard,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Icon(
-                      Icons.lightbulb_outline_rounded,
-                      color: AppColors.primary,
-                      size: 16,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  const Text(
-                    'Tip: Process PDFs to see them here',
-                    style: TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ).animate().fadeIn(delay: 400.ms).scale(delay: 400.ms),
+            ).animate().fadeIn(delay: 200.ms),
           ],
         ),
       ),
@@ -196,43 +211,41 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-class _FileCard extends StatelessWidget {
+// ── File row ───────────────────────────────────────────────────────────────────
+class _FileRow extends StatelessWidget {
   final PdfFileModel file;
+  final bool isDark;
   final VoidCallback onDelete;
   final VoidCallback onOpen;
 
-  const _FileCard({
+  const _FileRow({
     required this.file,
+    required this.isDark,
     required this.onDelete,
     required this.onOpen,
   });
 
-  Color get _operationColor {
+  Color get _opColor {
     switch (file.operation) {
-      case PdfOperation.merge:
-        return AppColors.primary;
-      case PdfOperation.split:
-        return const Color(0xFF8B5CF6);
-      case PdfOperation.protect:
-        return const Color(0xFF10B981);
-      case PdfOperation.unlock:
-        return const Color(0xFFF59E0B);
-      case PdfOperation.imageToPdf:
-        return const Color(0xFFEF4444);
-      case PdfOperation.compress:
-        return const Color(0xFFF97316);
-      case PdfOperation.sign:
-        return const Color(0xFFEC4899);
-      case PdfOperation.convert:
-        return const Color(0xFF84CC16);
-      case PdfOperation.pdfToImages:
-        return const Color(0xFF06B6D4);
+      case PdfOperation.merge:       return const Color(0xFF3B82F6);
+      case PdfOperation.split:       return const Color(0xFF8B5CF6);
+      case PdfOperation.protect:     return const Color(0xFF10B981);
+      case PdfOperation.unlock:      return const Color(0xFFF59E0B);
+      case PdfOperation.imageToPdf:  return const Color(0xFFEF4444);
+      case PdfOperation.compress:    return const Color(0xFFF97316);
+      case PdfOperation.sign:        return const Color(0xFFEC4899);
+      case PdfOperation.convert:     return const Color(0xFF84CC16);
+      case PdfOperation.pdfToImages: return const Color(0xFF06B6D4);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = DateFormat('MMM d, yyyy • h:mm a').format(file.createdAt);
+    final cardCol  = isDark ? AppColors.bgCard      : AppColors.bgCardLight;
+    final borderCol= isDark ? AppColors.border      : AppColors.borderLightMode;
+    final textPri  = isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
+    final textMut  = isDark ? AppColors.textMuted   : AppColors.textMutedLight;
+    final dateStr  = DateFormat('MMM d  ·  h:mm a').format(file.createdAt);
 
     return Dismissible(
       key: ValueKey(file.id),
@@ -240,214 +253,105 @@ class _FileCard extends StatelessWidget {
       onDismissed: (_) => context.read<AppProvider>().deleteFile(file.id),
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 24),
-        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.only(right: 20),
+        margin: const EdgeInsets.only(bottom: 1),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppColors.bgCard,
-              AppColors.error.withOpacity(0.2),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(16),
+          color: AppColors.error.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.error.withOpacity(0.25)),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.delete_rounded,
-                  color: AppColors.error, size: 24),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Delete',
-              style: TextStyle(
-                color: AppColors.error,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
+        child: const Icon(Icons.delete_outline_rounded,
+            color: AppColors.error, size: 22),
       ),
       child: GestureDetector(
         onTap: onOpen,
         child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 1),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: AppColors.bgCard,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
+            color: cardCol,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: borderCol),
           ),
           child: Row(
             children: [
-              // PDF icon with operation color
+              // Icon
               Container(
-                width: 56,
-                height: 56,
+                width: 44, height: 44,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      _operationColor.withOpacity(0.15),
-                      _operationColor.withOpacity(0.05),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(14),
+                  color: _opColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Icon(
-                      Icons.picture_as_pdf_rounded,
-                      color: _operationColor,
-                      size: 28,
-                    ),
-                  ],
-                ),
+                child: Icon(Icons.picture_as_pdf_rounded,
+                    color: _opColor, size: 22),
               ),
               const SizedBox(width: 14),
 
-              // File details
+              // Details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       file.name,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: textPri,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
+                        letterSpacing: -0.1,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 5),
                     Row(
                       children: [
-                        // Operation badge
+                        // Operation pill
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
+                              horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
-                            color: _operationColor.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: _operationColor.withOpacity(0.2),
-                              width: 1,
-                            ),
+                            color: _opColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(5),
                           ),
                           child: Text(
                             '${file.operation.icon} ${file.operation.label}',
                             style: TextStyle(
-                              color: _operationColor,
+                              color: _opColor,
                               fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.2,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        Icon(
-                          Icons.storage_rounded,
-                          size: 11,
-                          color: AppColors.textMuted,
-                        ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 8),
                         Text(
-                          file.formattedSize,
-                          style: const TextStyle(
-                            color: AppColors.textMuted,
+                          '${file.formattedSize}  ·  ${file.pageCount}p',
+                          style: TextStyle(
+                            color: textMut,
                             fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Icon(
-                          Icons.description_outlined,
-                          size: 11,
-                          color: AppColors.textMuted,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${file.pageCount}p',
-                          style: const TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.access_time_rounded,
-                          size: 11,
-                          color: AppColors.textMuted,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          dateStr,
-                          style: const TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 3),
+                    Text(
+                      dateStr,
+                      style: TextStyle(color: textMut, fontSize: 11),
                     ),
                   ],
                 ),
               ),
 
-              // Actions
-              Column(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                      color: AppColors.primary,
-                      onPressed: onOpen,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 36,
-                        minHeight: 36,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.textMuted.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                      color: AppColors.textMuted,
-                      onPressed: onDelete,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 36,
-                        minHeight: 36,
-                      ),
-                    ),
-                  ),
-                ],
+              const SizedBox(width: 10),
+
+              // Delete
+              GestureDetector(
+                onTap: onDelete,
+                child: Icon(
+                  Icons.delete_outline_rounded,
+                  color: textMut,
+                  size: 18,
+                ),
               ),
             ],
           ),
