@@ -12,7 +12,7 @@ import '../../core/ffi/pdf_bridge.dart';
 import '../../shared/widgets/gradient_button.dart';
 import '../../shared/widgets/processing_dialog.dart';
 import '../../shared/widgets/success_screen.dart';
-import 'package:pdftoolkit/rust/api/pdf_ops.dart';
+import 'package:pdftoolkit/src/rust/api/pdf_ops.dart';
 
 class ImageToPdfScreen extends StatefulWidget {
   const ImageToPdfScreen({super.key});

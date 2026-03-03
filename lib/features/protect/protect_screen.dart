@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:pdftoolkit/src/rust/api/pdf_ops.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
@@ -12,7 +13,7 @@ import '../../core/ffi/pdf_bridge.dart';
 import '../../shared/widgets/gradient_button.dart';
 import '../../shared/widgets/processing_dialog.dart';
 import '../../shared/widgets/success_screen.dart';
-import 'package:pdftoolkit/rust/api/pdf_ops.dart';
+import 'package:pdftoolkit/src/rust/api/pdf_ops.dart';
 
 class ProtectScreen extends StatefulWidget {
   const ProtectScreen({super.key});

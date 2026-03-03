@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:pdftoolkit/rust/frb_generated.dart';
-import 'package:pdftoolkit/rust/api/pdf_ops.dart';
+import 'package:pdftoolkit/src/rust/frb_generated.dart';
+import 'package:pdftoolkit/src/rust/api/pdf_ops.dart';
 import '../models/pdf_file_model.dart';
 
 /// Dart wrapper around the Rust PDF engine.
