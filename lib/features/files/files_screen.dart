@@ -87,38 +87,110 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.08),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.folder_open_rounded,
-              color: AppColors.primary,
-              size: 48,
-            ),
-          ).animate().scale(duration: 400.ms, curve: Curves.elasticOut),
-          const SizedBox(height: 24),
-          const Text(
-            'No Files Yet',
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-            ),
-          ).animate().fadeIn(delay: 100.ms),
-          const SizedBox(height: 8),
-          const Text(
-            'Files you process will appear here.\nGo to Workspace to get started.',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-            textAlign: TextAlign.center,
-          ).animate().fadeIn(delay: 200.ms),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Illustration container
+            Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.primary.withOpacity(0.12),
+                    AppColors.primary.withOpacity(0.04),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+              child: Center(
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: AppColors.primaryGradient,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.folder_open_rounded,
+                    color: Colors.white,
+                    size: 40,
+                  ),
+                ),
+              ),
+            ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
+            const SizedBox(height: 32),
+            const Text(
+              'No Files Yet',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+              ),
+            ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, delay: 200.ms),
+            const SizedBox(height: 12),
+            const Text(
+              'Files you process will appear here.\nGo to Workspace to get started.',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 14,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, delay: 300.ms),
+            const SizedBox(height: 32),
+            // Decorative hint
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.bgCard,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(
+                      Icons.lightbulb_outline_rounded,
+                      color: AppColors.primary,
+                      size: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Tip: Process PDFs to see them here',
+                    style: TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ).animate().fadeIn(delay: 400.ms).scale(delay: 400.ms),
+          ],
+        ),
       ),
     );
   }
@@ -148,17 +220,13 @@ class _FileCard extends StatelessWidget {
       case PdfOperation.imageToPdf:
         return const Color(0xFFEF4444);
       case PdfOperation.compress:
-        // TODO: Handle this case.
-        throw UnimplementedError();
+        return const Color(0xFFF97316);
       case PdfOperation.sign:
-        // TODO: Handle this case.
-        throw UnimplementedError();
+        return const Color(0xFFEC4899);
       case PdfOperation.convert:
-        // TODO: Handle this case.
-        throw UnimplementedError();
+        return const Color(0xFF84CC16);
       case PdfOperation.pdfToImages:
-        // TODO: Handle this case.
-        throw UnimplementedError();
+        return const Color(0xFF06B6D4);
     }
   }
 
@@ -172,20 +240,37 @@ class _FileCard extends StatelessWidget {
       onDismissed: (_) => context.read<AppProvider>().deleteFile(file.id),
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
+        padding: const EdgeInsets.only(right: 24),
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: AppColors.error.withOpacity(0.15),
+          gradient: LinearGradient(
+            colors: [
+              AppColors.bgCard,
+              AppColors.error.withOpacity(0.2),
+            ],
+          ),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.delete_rounded, color: AppColors.error),
-            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.error.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.delete_rounded,
+                  color: AppColors.error, size: 24),
+            ),
+            const SizedBox(height: 6),
             const Text(
               'Delete',
-              style: TextStyle(color: AppColors.error, fontSize: 11),
+              style: TextStyle(
+                color: AppColors.error,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -204,10 +289,17 @@ class _FileCard extends StatelessWidget {
             children: [
               // PDF icon with operation color
               Container(
-                width: 52,
-                height: 52,
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
-                  color: _operationColor.withOpacity(0.1),
+                  gradient: LinearGradient(
+                    colors: [
+                      _operationColor.withOpacity(0.15),
+                      _operationColor.withOpacity(0.05),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Stack(
@@ -216,7 +308,7 @@ class _FileCard extends StatelessWidget {
                     Icon(
                       Icons.picture_as_pdf_rounded,
                       color: _operationColor,
-                      size: 26,
+                      size: 28,
                     ),
                   ],
                 ),
@@ -238,53 +330,82 @@ class _FileCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
                         // Operation badge
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
-                            vertical: 2,
+                            vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: _operationColor.withOpacity(0.1),
+                            color: _operationColor.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: _operationColor.withOpacity(0.2),
+                              width: 1,
+                            ),
                           ),
                           child: Text(
                             '${file.operation.icon} ${file.operation.label}',
                             style: TextStyle(
                               color: _operationColor,
                               fontSize: 10,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.2,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 10),
+                        Icon(
+                          Icons.storage_rounded,
+                          size: 11,
+                          color: AppColors.textMuted,
+                        ),
+                        const SizedBox(width: 4),
                         Text(
                           file.formattedSize,
                           style: const TextStyle(
                             color: AppColors.textMuted,
                             fontSize: 11,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 10),
+                        Icon(
+                          Icons.description_outlined,
+                          size: 11,
+                          color: AppColors.textMuted,
+                        ),
+                        const SizedBox(width: 4),
                         Text(
                           '${file.pageCount}p',
+                          style: const TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.access_time_rounded,
+                          size: 11,
+                          color: AppColors.textMuted,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          dateStr,
                           style: const TextStyle(
                             color: AppColors.textMuted,
                             fontSize: 11,
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      dateStr,
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 11,
-                      ),
                     ),
                   ],
                 ),
@@ -293,24 +414,37 @@ class _FileCard extends StatelessWidget {
               // Actions
               Column(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                    color: AppColors.primary,
-                    onPressed: onOpen,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                      color: AppColors.primary,
+                      onPressed: onOpen,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                    color: AppColors.textMuted,
-                    onPressed: onDelete,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
+                  const SizedBox(height: 6),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.textMuted.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                      color: AppColors.textMuted,
+                      onPressed: onDelete,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
                     ),
                   ),
                 ],
