@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-  // Primary palette
-  static const Color primary = Color(0xFF3B82F6); // Blue
-  static const Color primaryDark = Color(0xFF2563EB);
-  static const Color primaryLight = Color(0xFF60A5FA);
-  static const Color accent = Color(0xFF06B6D4); // Cyan accent
+  // Primary palette - Burnished Amber + Coral
+  static const Color primary = Color(0xFFF59E0B); // Warm Amber
+  static const Color primaryDark = Color(0xFFD97706); // Deep Amber
+  static const Color primaryLight = Color(0xFFFBBF24); // Light Amber
+  static const Color accent = Color(0xFF0D9488); // Deep Teal
 
   // Dark mode backgrounds
   static const Color bgDark = Color(0xFF0F0F0F);
@@ -30,10 +30,10 @@ class AppColors {
   static const Color textSecondaryLight = Color(0xFF475569);
   static const Color textMutedLight = Color(0xFF94A3B8);
 
-  // Status (same for both)
-  static const Color success = Color(0xFF22C55E);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color error = Color(0xFFEF4444);
+  // Status colors
+  static const Color success = Color(0xFF059669); // Rich Emerald
+  static const Color warning = Color(0xFFF59E0B); // Warm Amber (reuse primary)
+  static const Color error = Color(0xFFEF4444); // Vibrant Coral
 
   // Dark mode borders
   static const Color border = Color(0xFF2D2D2D);
@@ -43,10 +43,10 @@ class AppColors {
   static const Color borderLightMode = Color(0xFFE2E8F0);
   static const Color borderLightModeStrong = Color(0xFFCBD5E1);
 
-  // Gradient stops (work for both)
+  // Gradient stops - Warm Energy
   static const List<Color> primaryGradient = [
-    Color(0xFF3B82F6),
-    Color(0xFF06B6D4),
+    Color(0xFFF59E0B), // Warm Amber
+    Color(0xFFEF4444), // Vibrant Coral
   ];
 
   static const List<Color> cardGradient = [
