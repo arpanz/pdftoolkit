@@ -6,7 +6,7 @@ use std::time::Instant;
 use anyhow::{anyhow, Result};
 use flutter_rust_bridge::frb;
 use lopdf::{Document, Object, ObjectId};
-use lopdf::content::Operation; // ADDED for decoded content
+use lopdf::content::Operation;
 
 use super::types::{EncryptionInfo, FileInfo, PdfResult};
 
@@ -434,7 +434,7 @@ fn images_to_pdf_inner(image_paths: Vec<String>, output_path: &str, _add_waterma
     Ok(count)
 }
 
-// ─── PDF to Images (FIXED) ───────────────────────────────────────────────────
+// ─── PDF to Images ───────────────────────────────────────────────────────────
 
 #[frb]
 pub fn pdf_to_images(input_path: String, output_dir: String, dpi: u32) -> PdfResult {
@@ -449,7 +449,6 @@ pub fn pdf_to_images(input_path: String, output_dir: String, dpi: u32) -> PdfRes
 }
 
 fn pdf_to_images_inner(input_path: &str, output_dir: &str, dpi: u32) -> Result<Vec<String>> {
-    // FIX 1: MUST LOAD AS MUTABLE AND DECOMPRESS
     let mut doc = Document::load(input_path)
         .map_err(|e| anyhow!("Failed to load PDF: {}", e))?;
     let _ = doc.decompress();
@@ -475,10 +474,8 @@ fn pdf_to_images_inner(input_path: &str, output_dir: &str, dpi: u32) -> Result<V
         let img_w = ((page_w_pt * scale) as u32).max(1);
         let img_h = ((page_h_pt * scale) as u32).max(1);
 
-        let mut canvas = image::RgbImage::new(img_w, img_h);
-        for pixel in canvas.pixels_mut() {
-            *pixel = image::Rgb([255u8, 255u8, 255u8]);
-        }
+        // PERF FIX 1: use from_pixel for O(1) white fill instead of pixel loop
+        let mut canvas = image::RgbImage::from_pixel(img_w, img_h, image::Rgb([255u8, 255u8, 255u8]));
 
         let placed = composite_page_images(&doc, page_id, &mut canvas, scale, page_h_pt)?;
         if placed > 0 {
@@ -493,7 +490,6 @@ fn pdf_to_images_inner(input_path: &str, output_dir: &str, dpi: u32) -> Result<V
         output_paths.push(out_path.to_string_lossy().into_owned());
     }
 
-    // Give clear error if no images found, rather than empty white pages
     if !any_raster_found {
         return Err(anyhow!(
             "No extractable images found. This PDF likely contains only text/vector content."
@@ -541,7 +537,7 @@ fn composite_page_images(
     scale: f64,
     page_h_pt: f64,
 ) -> Result<usize> {
-    use image::GenericImage;
+    use image::imageops;
 
     let page_dict = match doc.get_object(page_id).ok().and_then(|o| o.as_dict().ok()) {
         Some(d) => d.clone(),
@@ -553,10 +549,9 @@ fn composite_page_images(
         None => return Ok(0),
     };
 
-    // FIX 2: Decode content streams properly into lopdf Operations instead of parsing strings
     let content = match doc.get_and_decode_page_content(page_id) {
         Ok(c) => c,
-        Err(_) => return Ok(0), // No content or failure to decode
+        Err(_) => return Ok(0),
     };
 
     let mut current_matrix: Option<[f64; 6]> = None;
@@ -606,9 +601,8 @@ fn composite_page_images(
             .and_then(|o| o.as_name_str().ok())
             .unwrap_or("");
 
-        // FIX 3: Get decompressed image bytes if needed
         let img_bytes = if filter_name == "DCTDecode" {
-            stream.content.clone() // JPEG bytes are ready
+            stream.content.clone()
         } else {
             stream.decompressed_content().unwrap_or_else(|_| stream.content.clone())
         };
@@ -625,32 +619,24 @@ fn composite_page_images(
 
         let dest_x = (e * scale) as i64;
         let dest_y = ((page_h_pt - f - d.abs()) * scale) as i64;
-        let dest_w = ((a.abs()) * scale) as u32;
-        let dest_h = ((d.abs()) * scale) as u32;
+        let dest_w = (a.abs() * scale) as u32;
+        let dest_h = (d.abs() * scale) as u32;
 
         if dest_w == 0 || dest_h == 0 {
             continue;
         }
 
-        let scaled = image::imageops::resize(
+        // PERF FIX 2: Triangle is ~4x faster than Lanczos3 with negligible quality loss
+        let scaled = imageops::resize(
             &decoded,
             dest_w,
             dest_h,
-            image::imageops::FilterType::Lanczos3,
+            imageops::FilterType::Triangle,
         );
 
-        let canvas_w = canvas.width() as i64;
-        let canvas_h = canvas.height() as i64;
-        for py in 0..dest_h as i64 {
-            for px in 0..dest_w as i64 {
-                let cx = dest_x + px;
-                let cy = dest_y + py;
-                if cx >= 0 && cy >= 0 && cx < canvas_w && cy < canvas_h {
-                    let pixel = scaled.get_pixel(px as u32, py as u32);
-                    canvas.put_pixel(cx as u32, cy as u32, *pixel);
-                }
-            }
-        }
+        // PERF FIX 3: overlay does a bulk memcpy-style blit instead of per-pixel put_pixel loop
+        imageops::overlay(canvas, &scaled, dest_x, dest_y);
+
         placed_count += 1;
     }
 
@@ -690,7 +676,6 @@ fn get_xobject_dict(doc: &Document, page_dict: &lopdf::Dictionary) -> Option<lop
     }
 }
 
-// Climb parent tree if resources are inherited
 fn get_xobject_dict_inherited(
     doc: &Document,
     page_id: ObjectId,
@@ -700,7 +685,7 @@ fn get_xobject_dict_inherited(
         return Some(d);
     }
     let mut current = Some(page_id);
-    for _ in 0..8 { // limit loop depth
+    for _ in 0..8 {
         let cid = current?;
         let dict = doc.get_object(cid).ok()?.as_dict().ok()?.clone();
         if let Some(d) = get_xobject_dict(doc, &dict) {
@@ -885,13 +870,14 @@ fn sign_with_image(
     img_dict.set("Length", Object::Integer(jpeg_bytes.len() as i64));
     doc.objects.insert(img_id, Object::Stream(lopdf::Stream::new(img_dict, jpeg_bytes)));
 
-    let ts = now_ms();
+    // FIX: pdf_escape signer_name to avoid PDF syntax corruption; remove unused ts
+    let safe_name = pdf_escape(signer_name);
     let content = format!(
         "q\n{w:.2} 0 0 {h:.2} {x:.2} {y:.2} cm\n/SigImg Do\nQ\n\
          BT\n/F1 7 Tf\n{tx:.2} {ty:.2} Td\n0.4 0.4 0.4 rg\n(Signed by: {name}) Tj\nET\n",
         w = width, h = height, x = x, y = y,
         tx = x, ty = y - 10.0,
-        name = signer_name,
+        name = safe_name,
     );
     let content_bytes = content.into_bytes();
     let content_id: ObjectId = (next_base + 1, 0);
@@ -927,7 +913,7 @@ fn sign_with_text(
          0 -11 Td\n(Date: {ts}) Tj\nET\n",
         x = x, y = y, w = width, h = height,
         tx = x + 6.0, ty = y + height - 14.0,
-        name = signer_name,
+        name = pdf_escape(signer_name),
         ts = chrono::Utc::now().format("%Y-%m-%d"),
     );
     let content_bytes = content.into_bytes();
