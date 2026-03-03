@@ -117,8 +117,11 @@ class WorkspaceScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: const Icon(Icons.picture_as_pdf_rounded,
-                            color: Colors.white, size: 20),
+                        child: const Icon(
+                          Icons.picture_as_pdf_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Text(
@@ -163,9 +166,7 @@ class WorkspaceScreen extends StatelessWidget {
                   margin: const EdgeInsets.only(right: 12, top: 12),
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.bgCard
-                        : AppColors.bgCardLight,
+                    color: isDark ? AppColors.bgCard : AppColors.bgCardLight,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isDark
@@ -178,14 +179,13 @@ class WorkspaceScreen extends StatelessWidget {
                     transitionBuilder: (child, animation) {
                       return RotationTransition(
                         turns: animation,
-                        child: FadeTransition(
-                          opacity: animation,
-                          child: child,
-                        ),
+                        child: FadeTransition(opacity: animation, child: child),
                       );
                     },
                     child: Icon(
-                      isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                      isDark
+                          ? Icons.light_mode_rounded
+                          : Icons.dark_mode_rounded,
                       key: ValueKey(isDark),
                       color: isDark
                           ? AppColors.textSecondary
@@ -200,10 +200,14 @@ class WorkspaceScreen extends StatelessWidget {
                   onTap: () => _showProPaywall(context),
                   child: Container(
                     margin: const EdgeInsets.only(right: 16, top: 12),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                          colors: [Color(0xFFF59E0B), Color(0xFFEF4444)]),
+                        colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+                      ),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -216,15 +220,21 @@ class WorkspaceScreen extends StatelessWidget {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.workspace_premium_rounded,
-                            color: Colors.white, size: 16),
+                        Icon(
+                          Icons.workspace_premium_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
                         SizedBox(width: 6),
-                        Text('PRO',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1)),
+                        Text(
+                          'PRO',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -243,7 +253,10 @@ class WorkspaceScreen extends StatelessWidget {
                 _CrossPromoBanner(isDark: isDark),
                 const SizedBox(height: 24),
                 if (!isPro)
-                  _FreeTierCard(onUpgrade: () => _showProPaywall(context), isDark: isDark),
+                  _FreeTierCard(
+                    onUpgrade: () => _showProPaywall(context),
+                    isDark: isDark,
+                  ),
               ]),
             ),
           ),
@@ -398,16 +411,35 @@ class _ToolCardState extends State<_ToolCard> {
   void _navigate(BuildContext context) {
     Widget screen;
     switch (widget.route) {
-      case 'merge': screen = const MergeScreen(); break;
-      case 'split': screen = const SplitScreen(); break;
-      case 'protect': screen = const ProtectScreen(); break;
-      case 'unlock': screen = const UnlockScreen(); break;
-      case 'image_to_pdf': screen = const ImageToPdfScreen(); break;
-      case 'pdf_to_images': screen = const PdfToImagesScreen(); break;
-      case 'compress': screen = const CompressScreen(); break;
-      case 'sign': screen = const SignScreen(); break;
-      case 'convert': screen = const ConvertScreen(); break;
-      default: return;
+      case 'merge':
+        screen = const MergeScreen();
+        break;
+      case 'split':
+        screen = const SplitScreen();
+        break;
+      case 'protect':
+        screen = const ProtectScreen();
+        break;
+      case 'unlock':
+        screen = const UnlockScreen();
+        break;
+      case 'image_to_pdf':
+        screen = const ImageToPdfScreen();
+        break;
+      case 'pdf_to_images':
+        screen = const PdfToImagesScreen();
+        break;
+      case 'compress':
+        screen = const CompressScreen();
+        break;
+      case 'sign':
+        screen = const SignScreen();
+        break;
+      case 'convert':
+        screen = const ConvertScreen();
+        break;
+      default:
+        return;
     }
     Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
   }
@@ -441,13 +473,18 @@ class _ToolCardState extends State<_ToolCard> {
           child: Stack(
             children: [
               Positioned(
-                top: -20, right: -20,
+                top: -20,
+                right: -20,
                 child: Container(
-                  width: 80, height: 80,
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
-                      colors: [widget.gradient[0].withOpacity(0.15), Colors.transparent],
+                      colors: [
+                        widget.gradient[0].withOpacity(0.15),
+                        Colors.transparent,
+                      ],
                     ),
                   ),
                 ),
@@ -458,7 +495,8 @@ class _ToolCardState extends State<_ToolCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      width: 48, height: 48,
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: widget.gradient,
@@ -528,34 +566,45 @@ class _CrossPromoBanner extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 40, height: 40,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: const Color(0xFF10B981).withOpacity(0.15),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.receipt_long_rounded,
-                color: Color(0xFF10B981), size: 20),
+            child: const Icon(
+              Icons.receipt_long_rounded,
+              color: Color(0xFF10B981),
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Need to bill a client?',
-                    style: TextStyle(
-                        color: isDark
-                            ? AppColors.textPrimary
-                            : AppColors.textPrimaryLight,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600)),
-                const Text('Try our Offline Invoice Maker →',
-                    style: TextStyle(color: Color(0xFF10B981), fontSize: 12)),
+                Text(
+                  'Need to bill a client?',
+                  style: TextStyle(
+                    color: isDark
+                        ? AppColors.textPrimary
+                        : AppColors.textPrimaryLight,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Text(
+                  'Try our Offline Invoice Maker →',
+                  style: TextStyle(color: Color(0xFF10B981), fontSize: 12),
+                ),
               ],
             ),
           ),
-          Icon(Icons.arrow_forward_ios_rounded,
-              color: isDark ? AppColors.textMuted : AppColors.textMutedLight,
-              size: 14),
+          Icon(
+            Icons.arrow_forward_ios_rounded,
+            color: isDark ? AppColors.textMuted : AppColors.textMutedLight,
+            size: 14,
+          ),
         ],
       ),
     ).animate().fadeIn(delay: 300.ms);
@@ -588,24 +637,37 @@ class _FreeTierCard extends StatelessWidget {
         children: [
           const Row(
             children: [
-              Icon(Icons.workspace_premium_rounded,
-                  color: Color(0xFFF59E0B), size: 20),
+              Icon(
+                Icons.workspace_premium_rounded,
+                color: Color(0xFFF59E0B),
+                size: 20,
+              ),
               SizedBox(width: 8),
-              Text('Free Tier Limits',
-                  style: TextStyle(
-                      color: Color(0xFFF59E0B),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700)),
+              Text(
+                'Free Tier Limits',
+                style: TextStyle(
+                  color: Color(0xFFF59E0B),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          const _LimitRow(icon: Icons.merge_type_rounded, text: 'Max 3 files per merge'),
-          const SizedBox(height: 6),
-          const _LimitRow(icon: Icons.storage_rounded, text: 'Max 5MB per file'),
+          const _LimitRow(
+            icon: Icons.merge_type_rounded,
+            text: 'Max 3 files per merge',
+          ),
           const SizedBox(height: 6),
           const _LimitRow(
-              icon: Icons.branding_watermark_rounded,
-              text: 'Watermark on output'),
+            icon: Icons.storage_rounded,
+            text: 'Max 5MB per file',
+          ),
+          const SizedBox(height: 6),
+          const _LimitRow(
+            icon: Icons.branding_watermark_rounded,
+            text: 'Watermark on output',
+          ),
           const SizedBox(height: 16),
           GestureDetector(
             onTap: onUpgrade,
@@ -614,16 +676,18 @@ class _FreeTierCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                    colors: [Color(0xFFF59E0B), Color(0xFFEF4444)]),
+                  colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+                ),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Center(
                 child: Text(
                   '⚡ Unlock Pro — \$3.50 One-Time',
                   style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700),
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
@@ -644,16 +708,21 @@ class _LimitRow extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
-        Icon(icon,
-            color: isDark ? AppColors.textMuted : AppColors.textMutedLight,
-            size: 14),
+        Icon(
+          icon,
+          color: isDark ? AppColors.textMuted : AppColors.textMutedLight,
+          size: 14,
+        ),
         const SizedBox(width: 8),
-        Text(text,
-            style: TextStyle(
-                color: isDark
-                    ? AppColors.textSecondary
-                    : AppColors.textSecondaryLight,
-                fontSize: 12)),
+        Text(
+          text,
+          style: TextStyle(
+            color: isDark
+                ? AppColors.textSecondary
+                : AppColors.textSecondaryLight,
+            fontSize: 12,
+          ),
+        ),
       ],
     );
   }
@@ -676,47 +745,63 @@ class _ProPaywallSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 40, height: 4,
+            width: 40,
+            height: 4,
             decoration: BoxDecoration(
-                color: isDark ? AppColors.border : AppColors.borderLightMode,
-                borderRadius: BorderRadius.circular(2)),
+              color: isDark ? AppColors.border : AppColors.borderLightMode,
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
           const SizedBox(height: 24),
           Container(
-            width: 72, height: 72,
+            width: 72,
+            height: 72,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                  colors: [Color(0xFFF59E0B), Color(0xFFEF4444)]),
+                colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+              ),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Icon(Icons.workspace_premium_rounded,
-                color: Colors.white, size: 36),
+            child: const Icon(
+              Icons.workspace_premium_rounded,
+              color: Colors.white,
+              size: 36,
+            ),
           ),
           const SizedBox(height: 24),
-          Text('Unlock Pro Workspace',
-              style: TextStyle(
-                  color: isDark
-                      ? AppColors.textPrimary
-                      : AppColors.textPrimaryLight,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800)),
+          Text(
+            'Unlock Pro Workspace',
+            style: TextStyle(
+              color: isDark
+                  ? AppColors.textPrimary
+                  : AppColors.textPrimaryLight,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text('One-time purchase. No subscription.',
-              style: TextStyle(
-                  color: isDark
-                      ? AppColors.textSecondary
-                      : AppColors.textSecondaryLight,
-                  fontSize: 14)),
+          Text(
+            'One-time purchase. No subscription.',
+            style: TextStyle(
+              color: isDark
+                  ? AppColors.textSecondary
+                  : AppColors.textSecondaryLight,
+              fontSize: 14,
+            ),
+          ),
           const SizedBox(height: 24),
           const _ProFeature(
-              icon: Icons.all_inclusive_rounded,
-              text: 'Unlimited file sizes'),
+            icon: Icons.all_inclusive_rounded,
+            text: 'Unlimited file sizes',
+          ),
           const _ProFeature(
-              icon: Icons.merge_type_rounded,
-              text: 'Unlimited batch merging'),
+            icon: Icons.merge_type_rounded,
+            text: 'Unlimited batch merging',
+          ),
           const _ProFeature(
-              icon: Icons.branding_watermark_rounded,
-              text: 'No watermarks'),
+            icon: Icons.branding_watermark_rounded,
+            text: 'No watermarks',
+          ),
           const _ProFeature(icon: Icons.block_rounded, text: 'Remove all ads'),
           const SizedBox(height: 24),
           GestureDetector(
@@ -725,8 +810,8 @@ class _ProPaywallSheet extends StatelessWidget {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                    content:
-                        Text('🎉 Pro unlocked! Enjoy unlimited access.')),
+                  content: Text('🎉 Pro unlocked! Enjoy unlimited access.'),
+                ),
               );
             },
             child: Container(
@@ -734,7 +819,8 @@ class _ProPaywallSheet extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                    colors: [Color(0xFFF59E0B), Color(0xFFEF4444)]),
+                  colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+                ),
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
@@ -745,22 +831,26 @@ class _ProPaywallSheet extends StatelessWidget {
                 ],
               ),
               child: const Center(
-                child: Text('⚡ Get Pro — \$3.50 / ₹295',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800)),
+                child: Text(
+                  '⚡ Get Pro — \$3.50 / ₹295',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
             ),
           ),
           const SizedBox(height: 16),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Maybe later',
-                style: TextStyle(
-                    color: isDark
-                        ? AppColors.textMuted
-                        : AppColors.textMutedLight)),
+            child: Text(
+              'Maybe later',
+              style: TextStyle(
+                color: isDark ? AppColors.textMuted : AppColors.textMutedLight,
+              ),
+            ),
           ),
           const SizedBox(height: 8),
         ],
@@ -782,7 +872,8 @@ class _ProFeature extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 32, height: 32,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
               color: AppColors.success.withOpacity(0.15),
               borderRadius: BorderRadius.circular(8),
@@ -790,13 +881,16 @@ class _ProFeature extends StatelessWidget {
             child: Icon(icon, color: AppColors.success, size: 16),
           ),
           const SizedBox(width: 12),
-          Text(text,
-              style: TextStyle(
-                  color: isDark
-                      ? AppColors.textPrimary
-                      : AppColors.textPrimaryLight,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500)),
+          Text(
+            text,
+            style: TextStyle(
+              color: isDark
+                  ? AppColors.textPrimary
+                  : AppColors.textPrimaryLight,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
