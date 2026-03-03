@@ -534,7 +534,7 @@ fn get_page_dimensions(doc: &Document, page_id: ObjectId) -> (f64, f64) {
         if arr.len() == 4 {
             let w = arr[2].as_float().unwrap_or(595.0) - arr[0].as_float().unwrap_or(0.0);
             let h = arr[3].as_float().unwrap_or(842.0) - arr[1].as_float().unwrap_or(0.0);
-            return (w.abs(), h.abs());
+           return (w.abs() as f64, h.abs() as f64);
         }
     }
     // Default A4
