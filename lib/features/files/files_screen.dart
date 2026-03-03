@@ -147,6 +147,18 @@ class _FileCard extends StatelessWidget {
         return const Color(0xFFF59E0B);
       case PdfOperation.imageToPdf:
         return const Color(0xFFEF4444);
+      case PdfOperation.compress:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+      case PdfOperation.sign:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+      case PdfOperation.convert:
+        // TODO: Handle this case.
+        throw UnimplementedError();
+      case PdfOperation.pdfToImages:
+        // TODO: Handle this case.
+        throw UnimplementedError();
     }
   }
 

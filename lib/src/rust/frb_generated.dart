@@ -68,7 +68,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => 296019118;
+  int get rustContentHash => 2136196993;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -79,6 +79,12 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 }
 
 abstract class RustLibApi extends BaseApi {
+  Future<PdfResult> crateApiPdfOpsCompressPdf({
+    required String inputPath,
+    required String outputPath,
+    required int quality,
+  });
+
   Future<FileInfo> crateApiPdfOpsGetFileInfo({required String path});
 
   Future<EncryptionInfo> crateApiPdfOpsGetPdfEncryptionInfo({
@@ -103,10 +109,28 @@ abstract class RustLibApi extends BaseApi {
     required bool addWatermark,
   });
 
+  Future<PdfResult> crateApiPdfOpsPdfToImages({
+    required String inputPath,
+    required String outputDir,
+    required int dpi,
+  });
+
   Future<PdfResult> crateApiPdfOpsProtectPdf({
     required String inputPath,
     required String password,
     required String outputPath,
+  });
+
+  Future<PdfResult> crateApiPdfOpsSignPdf({
+    required String inputPath,
+    required String outputPath,
+    required String sigImagePath,
+    required String signerName,
+    required int pageNumber,
+    required double x,
+    required double y,
+    required double width,
+    required double height,
   });
 
   Future<PdfResult> crateApiPdfOpsSplitPdf({
@@ -114,6 +138,13 @@ abstract class RustLibApi extends BaseApi {
     required List<int> pages,
     required String outputPath,
     required bool addWatermark,
+  });
+
+  Future<PdfResult> crateApiPdfOpsTextToPdf({
+    required String textContent,
+    required String outputPath,
+    required String title,
+    required double fontSize,
   });
 
   Future<PdfResult> crateApiPdfOpsUnlockPdf({
@@ -132,6 +163,42 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   });
 
   @override
+  Future<PdfResult> crateApiPdfOpsCompressPdf({
+    required String inputPath,
+    required String outputPath,
+    required int quality,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(inputPath, serializer);
+          sse_encode_String(outputPath, serializer);
+          sse_encode_u_32(quality, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 1,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_pdf_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiPdfOpsCompressPdfConstMeta,
+        argValues: [inputPath, outputPath, quality],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPdfOpsCompressPdfConstMeta => const TaskConstMeta(
+    debugName: "compress_pdf",
+    argNames: ["inputPath", "outputPath", "quality"],
+  );
+
+  @override
   Future<FileInfo> crateApiPdfOpsGetFileInfo({required String path}) {
     return handler.executeNormal(
       NormalTask(
@@ -141,7 +208,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 1,
+            funcId: 2,
             port: port_,
           );
         },
@@ -171,7 +238,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 2,
+            funcId: 3,
             port: port_,
           );
         },
@@ -202,7 +269,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 3,
+            funcId: 4,
             port: port_,
           );
         },
@@ -227,7 +294,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(name, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 4)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 5)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -259,7 +326,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 5,
+            funcId: 6,
             port: port_,
           );
         },
@@ -288,7 +355,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 6,
+            funcId: 7,
             port: port_,
           );
         },
@@ -322,7 +389,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 7,
+            funcId: 8,
             port: port_,
           );
         },
@@ -343,6 +410,42 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  Future<PdfResult> crateApiPdfOpsPdfToImages({
+    required String inputPath,
+    required String outputDir,
+    required int dpi,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(inputPath, serializer);
+          sse_encode_String(outputDir, serializer);
+          sse_encode_u_32(dpi, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 9,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_pdf_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiPdfOpsPdfToImagesConstMeta,
+        argValues: [inputPath, outputDir, dpi],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPdfOpsPdfToImagesConstMeta => const TaskConstMeta(
+    debugName: "pdf_to_images",
+    argNames: ["inputPath", "outputDir", "dpi"],
+  );
+
+  @override
   Future<PdfResult> crateApiPdfOpsProtectPdf({
     required String inputPath,
     required String password,
@@ -358,7 +461,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 8,
+            funcId: 10,
             port: port_,
           );
         },
@@ -379,6 +482,74 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  Future<PdfResult> crateApiPdfOpsSignPdf({
+    required String inputPath,
+    required String outputPath,
+    required String sigImagePath,
+    required String signerName,
+    required int pageNumber,
+    required double x,
+    required double y,
+    required double width,
+    required double height,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(inputPath, serializer);
+          sse_encode_String(outputPath, serializer);
+          sse_encode_String(sigImagePath, serializer);
+          sse_encode_String(signerName, serializer);
+          sse_encode_u_32(pageNumber, serializer);
+          sse_encode_f_64(x, serializer);
+          sse_encode_f_64(y, serializer);
+          sse_encode_f_64(width, serializer);
+          sse_encode_f_64(height, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 11,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_pdf_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiPdfOpsSignPdfConstMeta,
+        argValues: [
+          inputPath,
+          outputPath,
+          sigImagePath,
+          signerName,
+          pageNumber,
+          x,
+          y,
+          width,
+          height,
+        ],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPdfOpsSignPdfConstMeta => const TaskConstMeta(
+    debugName: "sign_pdf",
+    argNames: [
+      "inputPath",
+      "outputPath",
+      "sigImagePath",
+      "signerName",
+      "pageNumber",
+      "x",
+      "y",
+      "width",
+      "height",
+    ],
+  );
+
+  @override
   Future<PdfResult> crateApiPdfOpsSplitPdf({
     required String inputPath,
     required List<int> pages,
@@ -396,7 +567,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 9,
+            funcId: 12,
             port: port_,
           );
         },
@@ -417,6 +588,44 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  Future<PdfResult> crateApiPdfOpsTextToPdf({
+    required String textContent,
+    required String outputPath,
+    required String title,
+    required double fontSize,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(textContent, serializer);
+          sse_encode_String(outputPath, serializer);
+          sse_encode_String(title, serializer);
+          sse_encode_f_64(fontSize, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 13,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_pdf_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiPdfOpsTextToPdfConstMeta,
+        argValues: [textContent, outputPath, title, fontSize],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPdfOpsTextToPdfConstMeta => const TaskConstMeta(
+    debugName: "text_to_pdf",
+    argNames: ["textContent", "outputPath", "title", "fontSize"],
+  );
+
+  @override
   Future<PdfResult> crateApiPdfOpsUnlockPdf({
     required String inputPath,
     required String password,
@@ -432,7 +641,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 10,
+            funcId: 14,
             port: port_,
           );
         },
@@ -482,6 +691,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       isEncrypted: dco_decode_bool(arr[0]),
       pageCount: dco_decode_u_32(arr[1]),
     );
+  }
+
+  @protected
+  double dco_decode_f_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as double;
   }
 
   @protected
@@ -596,6 +811,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       isEncrypted: var_isEncrypted,
       pageCount: var_pageCount,
     );
+  }
+
+  @protected
+  double sse_decode_f_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getFloat64();
   }
 
   @protected
@@ -729,6 +950,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_bool(self.isEncrypted, serializer);
     sse_encode_u_32(self.pageCount, serializer);
+  }
+
+  @protected
+  void sse_encode_f_64(double self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putFloat64(self);
   }
 
   @protected
