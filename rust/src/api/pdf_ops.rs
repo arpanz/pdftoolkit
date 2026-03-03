@@ -144,11 +144,31 @@ fn merge_pdfs_inner(paths: Vec<String>, output_path: &str, add_watermark: bool) 
         total_pages += doc_page_ids.len() as u32;
 
         for page_id in &doc_page_ids {
-            // Bug #1 fix: before reparenting, copy inherited properties from the old
-            // parent so that MediaBox / Resources / CropBox / Rotate are not lost.
-            let inherited_keys: &[&[u8]] = &[b"MediaBox", b"CropBox", b"Resources", b"Rotate"];
+            // Flatten inherited properties (MediaBox, CropBox, Resources, Rotate)
+            // by walking the FULL parent chain — not just the direct parent.
+            // This handles multi-level page trees where MediaBox lives on the
+            // root Pages node, two or more levels above the leaf page.
+            const INHERITED: &[&[u8]] = &[b"MediaBox", b"CropBox", b"Resources", b"Rotate"];
 
-            // Read old parent id first (immutable borrow)
+            // Determine which keys the page is missing (read-only borrow)
+            let missing_keys: Vec<&[u8]> = {
+                let page_dict = doc
+                    .get_object(*page_id)
+                    .ok()
+                    .and_then(|o| o.as_dict().ok());
+                INHERITED
+                    .iter()
+                    .copied()
+                    .filter(|k| {
+                        page_dict
+                            .as_ref()
+                            .map(|d| !d.has(*k))
+                            .unwrap_or(true)
+                    })
+                    .collect()
+            };
+
+            // Get the direct parent id so we can start climbing from there
             let old_parent_id: Option<ObjectId> = doc
                 .get_object(*page_id)
                 .ok()
@@ -156,38 +176,22 @@ fn merge_pdfs_inner(paths: Vec<String>, output_path: &str, add_watermark: bool) 
                 .and_then(|d| d.get(b"Parent").ok())
                 .and_then(|r| r.as_reference().ok());
 
-            // Collect values to inherit (clone so we drop the borrow)
-            let mut inherited_values: Vec<(&'static [u8], Object)> = Vec::new();
+            // Walk up the parent chain for each missing key
+            // (uses Vec<(Vec<u8>, Object)> — no unsafe needed)
+            let mut inherited_values: Vec<(Vec<u8>, Object)> = Vec::new();
             if let Some(parent_id) = old_parent_id {
-                if let Ok(parent_obj) = doc.get_object(parent_id) {
-                    if let Ok(parent_dict) = parent_obj.as_dict() {
-                        for key in inherited_keys {
-                            // Only copy if the page doesn't already have that key
-                            let page_has_key = doc
-                                .get_object(*page_id)
-                                .ok()
-                                .and_then(|o| o.as_dict().ok())
-                                .map(|d| d.has(*key))
-                                .unwrap_or(false);
-                            if !page_has_key {
-                                if let Ok(val) = parent_dict.get(*key) {
-                                    // SAFETY: all keys are 'static byte slices
-                                    let key_static: &'static [u8] = unsafe {
-                                        std::mem::transmute::<&[u8], &'static [u8]>(*key)
-                                    };
-                                    inherited_values.push((key_static, val.clone()));
-                                }
-                            }
-                        }
+                for key in &missing_keys {
+                    if let Some(val) = walk_inherited(&doc, parent_id, key) {
+                        inherited_values.push((key.to_vec(), val));
                     }
                 }
             }
 
-            // Now mutably update the page dict
+            // Apply inherited values and reparent (mutable borrow)
             if let Ok(page) = doc.get_object_mut(*page_id) {
                 if let Ok(dict) = page.as_dict_mut() {
                     for (key, val) in inherited_values {
-                        dict.set(key, val);
+                        dict.set(key.as_slice(), val);
                     }
                     dict.set("Parent", Object::Reference(pages_id));
                 }
@@ -488,6 +492,20 @@ pub fn get_pdf_encryption_info(path: String) -> EncryptionInfo {
 }
 
 // ─── Internal helpers ────────────────────────────────────────────────────────
+
+/// Walk up the page-tree parent chain to find an inherited property.
+/// Starts at `node_id` and climbs via /Parent until the key is found or the
+/// root is reached. This handles multi-level page trees correctly.
+fn walk_inherited(doc: &Document, node_id: ObjectId, key: &[u8]) -> Option<Object> {
+    let obj = doc.get_object(node_id).ok()?;
+    let dict = obj.as_dict().ok()?;
+    if let Ok(val) = dict.get(key) {
+        return Some(val.clone());
+    }
+    // Climb to parent
+    let parent_id = dict.get(b"Parent").ok()?.as_reference().ok()?;
+    walk_inherited(doc, parent_id, key)
+}
 
 fn fit_to_a4(w: f64, h: f64) -> (f64, f64) {
     let max_w = 595.0_f64;
