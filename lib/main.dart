@@ -10,10 +10,7 @@ import 'src/rust/frb_generated.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize Rust bridge
   await RustLib.init();
-
   runApp(
     ChangeNotifierProvider(
       create: (_) => AppProvider()..init(),
@@ -28,25 +25,24 @@ class BatchPdfApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AppProvider>();
-    final isDark = provider.isDarkMode;
-    final themeMode = provider.themeMode;
+    final isDark   = provider.isDarkMode;
 
-    // Update system UI overlay style based on theme
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-        systemNavigationBarColor: isDark ? AppColors.bgCard : AppColors.bgCardLight,
+        systemNavigationBarColor:
+            isDark ? AppColors.bgCard : AppColors.bgCardLight,
         systemNavigationBarIconBrightness:
             isDark ? Brightness.light : Brightness.dark,
       ),
     );
 
     return MaterialApp(
-      title: 'BatchPDF Pro',
+      title: 'BatchPDF',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme(themeMode),
-      darkTheme: AppTheme.darkTheme(themeMode),
+      theme:     AppTheme.lightTheme(),
+      darkTheme: AppTheme.darkTheme(),
       themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
       home: const AppShell(),
     );
@@ -55,7 +51,6 @@ class BatchPdfApp extends StatelessWidget {
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
-
   @override
   State<AppShell> createState() => _AppShellState();
 }
@@ -72,13 +67,12 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       backgroundColor: isDark ? AppColors.bgDark : AppColors.bgLight,
       body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: _BottomNav(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        onTap: (i) => setState(() => _currentIndex = i),
       ),
     );
   }
@@ -87,20 +81,17 @@ class _AppShellState extends State<AppShell> {
 class _BottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
-
   const _BottomNav({required this.currentIndex, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AppColors.bgCard : AppColors.bgCardLight,
         border: Border(
           top: BorderSide(
             color: isDark ? AppColors.border : AppColors.borderLightMode,
-            width: 1,
           ),
         ),
       ),
@@ -110,27 +101,9 @@ class _BottomNav extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _NavItem(
-                icon: Icons.grid_view_rounded,
-                activeIcon: Icons.grid_view_rounded,
-                label: 'Workspace',
-                isActive: currentIndex == 0,
-                onTap: () => onTap(0),
-              ),
-              _NavItem(
-                icon: Icons.folder_outlined,
-                activeIcon: Icons.folder_rounded,
-                label: 'Files',
-                isActive: currentIndex == 1,
-                onTap: () => onTap(1),
-              ),
-              _NavItem(
-                icon: Icons.settings_outlined,
-                activeIcon: Icons.settings_rounded,
-                label: 'Settings',
-                isActive: currentIndex == 2,
-                onTap: () => onTap(2),
-              ),
+              _NavItem(icon: Icons.grid_view_rounded,  activeIcon: Icons.grid_view_rounded,  label: 'Tools',    isActive: currentIndex == 0, onTap: () => onTap(0)),
+              _NavItem(icon: Icons.folder_outlined,    activeIcon: Icons.folder_rounded,      label: 'Files',    isActive: currentIndex == 1, onTap: () => onTap(1)),
+              _NavItem(icon: Icons.settings_outlined,  activeIcon: Icons.settings_rounded,    label: 'Settings', isActive: currentIndex == 2, onTap: () => onTap(2)),
             ],
           ),
         ),
@@ -145,19 +118,16 @@ class _NavItem extends StatelessWidget {
   final String label;
   final bool isActive;
   final VoidCallback onTap;
-
   const _NavItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-    required this.isActive,
-    required this.onTap,
+    required this.icon, required this.activeIcon,
+    required this.label, required this.isActive, required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).colorScheme.primary;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final isDark  = Theme.of(context).brightness == Brightness.dark;
+    final inactive= isDark ? AppColors.textMuted : AppColors.textMutedLight;
 
     return GestureDetector(
       onTap: onTap,
@@ -166,9 +136,7 @@ class _NavItem extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive
-              ? primaryColor.withOpacity(0.12)
-              : Colors.transparent,
+          color: isActive ? primary.withOpacity(0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -176,18 +144,14 @@ class _NavItem extends StatelessWidget {
           children: [
             Icon(
               isActive ? activeIcon : icon,
-              color: isActive
-                  ? primaryColor
-                  : (isDark ? AppColors.textMuted : AppColors.textMutedLight),
+              color: isActive ? primary : inactive,
               size: 22,
             ),
             const SizedBox(height: 3),
             Text(
               label,
               style: TextStyle(
-                color: isActive
-                    ? primaryColor
-                    : (isDark ? AppColors.textMuted : AppColors.textMutedLight),
+                color: isActive ? primary : inactive,
                 fontSize: 10,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
               ),
@@ -199,7 +163,6 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-// Alias kept so integration_test/simple_test.dart (which imports MyApp) still compiles.
 class MyApp extends BatchPdfApp {
   const MyApp({super.key});
 }
