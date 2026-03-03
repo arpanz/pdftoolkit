@@ -218,11 +218,14 @@ fn merge_pdfs_inner(paths: Vec<String>, output_path: &str, add_watermark: bool) 
     merged.objects.insert(catalog_id, Object::Dictionary(catalog));
 
     merged.trailer.set("Root", Object::Reference(catalog_id));
-    merged.trailer.set("Size", Object::Integer((next_id + 1) as i64));
 
     if add_watermark {
         add_watermark_to_doc(&mut merged, pages_id)?;
     }
+
+    // CRITICAL: lopdf's save() uses max_id to size the xref table.
+    // Without this, max_id stays at 0 and the xref is empty → corrupt PDF.
+    merged.max_id = merged.objects.keys().map(|k| k.0).max().unwrap_or(0);
 
     if let Some(parent) = Path::new(output_path).parent() {
         fs::create_dir_all(parent)?;
@@ -447,7 +450,10 @@ fn images_to_pdf_inner(image_paths: Vec<String>, output_path: &str, _add_waterma
     doc.objects.insert(catalog_id, Object::Dictionary(catalog));
 
     doc.trailer.set("Root", Object::Reference(catalog_id));
-    doc.trailer.set("Size", Object::Integer((next_id + 1) as i64));
+
+    // CRITICAL: lopdf's save() uses max_id to size the xref table.
+    // Without this, max_id stays at 0 and the xref is empty → corrupt PDF.
+    doc.max_id = doc.objects.keys().map(|k| k.0).max().unwrap_or(0);
 
     if let Some(parent) = Path::new(output_path).parent() {
         fs::create_dir_all(parent)?;
