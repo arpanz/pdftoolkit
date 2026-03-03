@@ -1,12 +1,80 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../providers/app_provider.dart';
+
+class ThemeColors {
+  final Color primary;
+  final Color primaryDark;
+  final Color primaryLight;
+  final Color accent;
+  final List<Color> primaryGradient;
+
+  const ThemeColors({
+    required this.primary,
+    required this.primaryDark,
+    required this.primaryLight,
+    required this.accent,
+    required this.primaryGradient,
+  });
+}
 
 class AppColors {
-  // Primary palette - Burnished Amber + Coral
-  static const Color primary = Color(0xFFF59E0B); // Warm Amber
-  static const Color primaryDark = Color(0xFFD97706); // Deep Amber
-  static const Color primaryLight = Color(0xFFFBBF24); // Light Amber
-  static const Color accent = Color(0xFF0D9488); // Deep Teal
+  // Theme-specific colors
+  static const _classicBlue = ThemeColors(
+    primary: Color(0xFF3B82F6),
+    primaryDark: Color(0xFF2563EB),
+    primaryLight: Color(0xFF60A5FA),
+    accent: Color(0xFF06B6D4),
+    primaryGradient: [Color(0xFF3B82F6), Color(0xFF06B6D4)],
+  );
+
+  static const _amberTeal = ThemeColors(
+    primary: Color(0xFFF59E0B),
+    primaryDark: Color(0xFFD97706),
+    primaryLight: Color(0xFFFBBF24),
+    accent: Color(0xFF0D9488),
+    primaryGradient: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+  );
+
+  static const _lavenderMint = ThemeColors(
+    primary: Color(0xFFA78BFA),
+    primaryDark: Color(0xFF8B5CF6),
+    primaryLight: Color(0xFFC4B5FD),
+    accent: Color(0xFF86EFAC),
+    primaryGradient: [Color(0xFFA78BFA), Color(0xFF86EFAC)],
+  );
+
+  static const _coralIndigo = ThemeColors(
+    primary: Color(0xFFFF6B9D),
+    primaryDark: Color(0xFFEC4899),
+    primaryLight: Color(0xFFFDA4AF),
+    accent: Color(0xFF4F46E5),
+    primaryGradient: [Color(0xFFFF6B9D), Color(0xFF4F46E5)],
+  );
+
+  static const _forestTerracotta = ThemeColors(
+    primary: Color(0xFF059669),
+    primaryDark: Color(0xFF047857),
+    primaryLight: Color(0xFF10B981),
+    accent: Color(0xFFDC2626),
+    primaryGradient: [Color(0xFF059669), Color(0xFFDC2626)],
+  );
+
+  // Get theme colors based on mode
+  static ThemeColors getThemeColors(AppThemeMode mode) {
+    switch (mode) {
+      case AppThemeMode.classicBlue:
+        return _classicBlue;
+      case AppThemeMode.amberTeal:
+        return _amberTeal;
+      case AppThemeMode.lavenderMint:
+        return _lavenderMint;
+      case AppThemeMode.coralIndigo:
+        return _coralIndigo;
+      case AppThemeMode.forestTerracotta:
+        return _forestTerracotta;
+    }
+  }
 
   // Dark mode backgrounds
   static const Color bgDark = Color(0xFF0F0F0F);
@@ -31,9 +99,9 @@ class AppColors {
   static const Color textMutedLight = Color(0xFF94A3B8);
 
   // Status colors
-  static const Color success = Color(0xFF059669); // Rich Emerald
-  static const Color warning = Color(0xFFF59E0B); // Warm Amber (reuse primary)
-  static const Color error = Color(0xFFEF4444); // Vibrant Coral
+  static const Color success = Color(0xFF059669);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color error = Color(0xFFEF4444);
 
   // Dark mode borders
   static const Color border = Color(0xFF2D2D2D);
@@ -43,18 +111,7 @@ class AppColors {
   static const Color borderLightMode = Color(0xFFE2E8F0);
   static const Color borderLightModeStrong = Color(0xFFCBD5E1);
 
-  // Gradient stops - Warm Energy
-  static const List<Color> primaryGradient = [
-    Color(0xFFF59E0B), // Warm Amber
-    Color(0xFFEF4444), // Vibrant Coral
-  ];
-
-  static const List<Color> cardGradient = [
-    Color(0xFF1E1E1E),
-    Color(0xFF252525),
-  ];
-
-  // Adaptive getters based on context
+  // Adaptive getters
   static Color backgroundFor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark ? bgDark : bgLight;
   }
@@ -89,14 +146,16 @@ class AppColors {
 }
 
 class AppTheme {
-  static ThemeData get darkTheme {
+  static ThemeData darkTheme(AppThemeMode themeMode) {
+    final colors = AppColors.getThemeColors(themeMode);
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.bgDark,
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.primary,
-        secondary: AppColors.accent,
+      colorScheme: ColorScheme.dark(
+        primary: colors.primary,
+        secondary: colors.accent,
         surface: AppColors.bgCard,
         error: AppColors.error,
         onPrimary: Colors.white,
@@ -163,9 +222,9 @@ class AppTheme {
         ),
         iconTheme: const IconThemeData(color: AppColors.textPrimary),
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: AppColors.bgCard,
-        selectedItemColor: AppColors.primary,
+        selectedItemColor: colors.primary,
         unselectedItemColor: AppColors.textMuted,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
@@ -180,7 +239,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
+          backgroundColor: colors.primary,
           foregroundColor: Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
@@ -195,8 +254,8 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          side: const BorderSide(color: AppColors.primary, width: 1.5),
+          foregroundColor: colors.primary,
+          side: BorderSide(color: colors.primary, width: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -220,7 +279,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: colors.primary, width: 2),
         ),
         labelStyle: const TextStyle(color: AppColors.textSecondary),
         hintStyle: const TextStyle(color: AppColors.textMuted),
@@ -232,12 +291,12 @@ class AppTheme {
       iconTheme: const IconThemeData(color: AppColors.textSecondary),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return AppColors.primary;
+          if (states.contains(WidgetState.selected)) return colors.primary;
           return AppColors.textMuted;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.primary.withOpacity(0.3);
+            return colors.primary.withOpacity(0.3);
           }
           return AppColors.bgSurface;
         }),
@@ -264,14 +323,16 @@ class AppTheme {
     );
   }
 
-  static ThemeData get lightTheme {
+  static ThemeData lightTheme(AppThemeMode themeMode) {
+    final colors = AppColors.getThemeColors(themeMode);
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.bgLight,
-      colorScheme: const ColorScheme.light(
-        primary: AppColors.primary,
-        secondary: AppColors.accent,
+      colorScheme: ColorScheme.light(
+        primary: colors.primary,
+        secondary: colors.accent,
         surface: AppColors.bgCardLight,
         error: AppColors.error,
         onPrimary: Colors.white,
@@ -338,9 +399,9 @@ class AppTheme {
         ),
         iconTheme: const IconThemeData(color: AppColors.textPrimaryLight),
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: AppColors.bgCardLight,
-        selectedItemColor: AppColors.primary,
+        selectedItemColor: colors.primary,
         unselectedItemColor: AppColors.textMutedLight,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
@@ -355,10 +416,10 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
+          backgroundColor: colors.primary,
           foregroundColor: Colors.white,
           elevation: 0,
-          shadowColor: AppColors.primary.withOpacity(0.2),
+          shadowColor: colors.primary.withOpacity(0.2),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -371,8 +432,8 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          side: const BorderSide(color: AppColors.primary, width: 1.5),
+          foregroundColor: colors.primary,
+          side: BorderSide(color: colors.primary, width: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -396,7 +457,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: colors.primary, width: 2),
         ),
         labelStyle: const TextStyle(color: AppColors.textSecondaryLight),
         hintStyle: const TextStyle(color: AppColors.textMutedLight),
@@ -408,12 +469,12 @@ class AppTheme {
       iconTheme: const IconThemeData(color: AppColors.textSecondaryLight),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return AppColors.primary;
+          if (states.contains(WidgetState.selected)) return colors.primary;
           return AppColors.textMutedLight;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.primary.withOpacity(0.3);
+            return colors.primary.withOpacity(0.3);
           }
           return AppColors.bgSurfaceLight;
         }),
