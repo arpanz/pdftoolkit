@@ -50,6 +50,16 @@ fn err(msg: String) -> PdfResult {
     }
 }
 
+/// Save a document with correct max_id. lopdf's save() sizes the xref table
+/// from self.max_id — if it's 0 (the default for new documents), every object
+/// is invisible and the PDF is corrupt. This helper must be used instead of
+/// raw doc.save() whenever objects have been inserted manually.
+fn save_document(doc: &mut Document, path: &str) -> anyhow::Result<()> {
+    doc.max_id = doc.objects.keys().map(|k| k.0).max().unwrap_or(0);
+    doc.save(path).map_err(|e| anyhow!("Failed to save PDF: {}", e))?;
+    Ok(())
+}
+
 /// Remap all object IDs in `doc` so they start from `start_id`.
 fn remap_ids(doc: &mut Document, start_id: u32) -> u32 {
     let old_ids: Vec<ObjectId> = doc.objects.keys().cloned().collect();
@@ -223,7 +233,7 @@ fn merge_pdfs_inner(paths: Vec<String>, output_path: &str, add_watermark: bool) 
     if let Some(parent) = Path::new(output_path).parent() {
         fs::create_dir_all(parent)?;
     }
-    merged.save(output_path)?;
+    save_document(&mut merged, output_path)?;
     Ok(total_pages)
 }
 
@@ -271,7 +281,7 @@ fn split_pdf_inner(input_path: &str, pages: &[u32], output_path: &str, add_water
     if let Some(parent) = Path::new(output_path).parent() {
         fs::create_dir_all(parent)?;
     }
-    doc.save(output_path)?;
+    save_document(&mut doc, output_path)?;
     Ok(pages.len() as u32)
 }
 
@@ -310,7 +320,7 @@ fn unlock_pdf_inner(input_path: &str, _password: &str, output_path: &str) -> Res
     if let Some(parent) = Path::new(output_path).parent() {
         fs::create_dir_all(parent)?;
     }
-    doc.save(output_path)?;
+    save_document(&mut doc, output_path)?;
     Ok(page_count)
 }
 
@@ -430,7 +440,7 @@ fn images_to_pdf_inner(image_paths: Vec<String>, output_path: &str, _add_waterma
     if let Some(parent) = Path::new(output_path).parent() {
         fs::create_dir_all(parent)?;
     }
-    doc.save(output_path)?;
+    save_document(&mut doc, output_path)?;
     Ok(count)
 }
 
@@ -786,7 +796,7 @@ fn compress_pdf_inner(input_path: &str, output_path: &str, quality: u32) -> Resu
     if let Some(parent) = Path::new(output_path).parent() {
         fs::create_dir_all(parent)?;
     }
-    doc.save(output_path)?;
+    save_document(&mut doc, output_path)?;
     Ok(page_count)
 }
 
@@ -861,7 +871,7 @@ fn sign_pdf_inner(
     if let Some(parent) = Path::new(output_path).parent() {
         fs::create_dir_all(parent)?;
     }
-    doc.save(output_path)?;
+    save_document(&mut doc, output_path)?;
     Ok(page_count)
 }
 
@@ -1231,7 +1241,7 @@ fn text_to_pdf_inner(
     if let Some(parent) = Path::new(output_path).parent() {
         fs::create_dir_all(parent)?;
     }
-    doc.save(output_path)?;
+    save_document(&mut doc, output_path)?;
     Ok(total_pages)
 }
 
