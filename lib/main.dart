@@ -27,7 +27,9 @@ class BatchPdfApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.watch<AppProvider>().isDarkMode;
+    final provider = context.watch<AppProvider>();
+    final isDark = provider.isDarkMode;
+    final themeMode = provider.themeMode;
 
     // Update system UI overlay style based on theme
     SystemChrome.setSystemUIOverlayStyle(
@@ -43,8 +45,8 @@ class BatchPdfApp extends StatelessWidget {
     return MaterialApp(
       title: 'BatchPDF Pro',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme(themeMode),
+      darkTheme: AppTheme.darkTheme(themeMode),
       themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
       home: const AppShell(),
     );
@@ -154,6 +156,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
@@ -164,7 +167,7 @@ class _NavItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
           color: isActive
-              ? AppColors.primary.withOpacity(0.12)
+              ? primaryColor.withOpacity(0.12)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
@@ -174,7 +177,7 @@ class _NavItem extends StatelessWidget {
             Icon(
               isActive ? activeIcon : icon,
               color: isActive
-                  ? AppColors.primary
+                  ? primaryColor
                   : (isDark ? AppColors.textMuted : AppColors.textMutedLight),
               size: 22,
             ),
@@ -183,7 +186,7 @@ class _NavItem extends StatelessWidget {
               label,
               style: TextStyle(
                 color: isActive
-                    ? AppColors.primary
+                    ? primaryColor
                     : (isDark ? AppColors.textMuted : AppColors.textMutedLight),
                 fontSize: 10,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
