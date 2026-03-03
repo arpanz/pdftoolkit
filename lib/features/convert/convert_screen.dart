@@ -1,10 +1,12 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:archive/archive.dart'; // ADDED for zip parsing
 import '../../core/theme/app_theme.dart';
 import '../../core/providers/app_provider.dart';
 import '../../core/models/pdf_file_model.dart';
@@ -59,34 +61,84 @@ class _ConvertScreenState extends State<ConvertScreen> {
 
   Future<String> _extractTextContent(String filePath) async {
     final ext = p.extension(filePath).toLowerCase();
+
+    // Plain text / CSV: read directly
     if (ext == '.txt' || ext == '.csv') {
-      // Plain text / CSV: read directly
       return await File(filePath).readAsString();
-    } else if (ext == '.docx') {
-      // DOCX: extract raw text from XML inside the zip
-      // docx files are ZIP archives containing word/document.xml
-      try {
-        final bytes = await File(filePath).readAsBytes();
-        // Simple extraction: find text between <w:t> tags
-        final content = String.fromCharCodes(bytes);
-        final regex = RegExp(r'<w:t[^>]*>([^<]*)<\/w:t>');
-        final matches = regex.allMatches(content);
-        return matches.map((m) => m.group(1) ?? '').join(' ');
-      } catch (_) {
-        return 'Could not extract text from DOCX. Convert to .txt first for best results.';
+    }
+
+    if (ext == '.xls') {
+      return 'XLS is not supported. Please save as XLSX or export as CSV.';
+    }
+
+    // Helper to extract a specific file from ZIP bytes
+    String readZipText(List<int> zipBytes, String entryPath) {
+      final archive = ZipDecoder().decodeBytes(zipBytes, verify: false);
+      final file = archive.files.firstWhere(
+        (f) => f.name == entryPath,
+        orElse: () => ArchiveFile.noCompress('', 0, []),
+      );
+      if (file.name.isEmpty) return '';
+      final data = file.content;
+      if (data is List<int>) {
+        return utf8.decode(data, allowMalformed: true);
       }
-    } else if (ext == '.xlsx' || ext == '.xls') {
-      // XLSX: extract shared strings from XML
+      return data.toString();
+    }
+
+    // Helper to clean up basic XML entities
+    String decodeXmlEntities(String s) {
+      return s
+          .replaceAll('&amp;', '&')
+          .replaceAll('&lt;', '<')
+          .replaceAll('&gt;', '>')
+          .replaceAll('&quot;', '"')
+          .replaceAll('&apos;', "'");
+    }
+
+    if (ext == '.docx') {
       try {
         final bytes = await File(filePath).readAsBytes();
-        final content = String.fromCharCodes(bytes);
-        final regex = RegExp(r'<si><t>([^<]*)<\/t><\/si>');
-        final matches = regex.allMatches(content);
-        return matches.map((m) => m.group(1) ?? '').join('\t');
-      } catch (_) {
-        return 'Could not extract text from XLSX. Convert to CSV first for best results.';
+        var xml = readZipText(bytes, 'word/document.xml');
+        if (xml.isEmpty) {
+          return 'Could not read DOCX content (document.xml missing).';
+        }
+
+        // Add spaces for paragraphs/breaks
+        xml = xml.replaceAll(RegExp(r'<w:br\s*/>'), '\n');
+        xml = xml.replaceAll(RegExp(r'<w:tab\s*/>'), '\t');
+        xml = xml.replaceAll(RegExp(r'</w:p>'), '\n');
+
+        final regex = RegExp(r'<w:t[^>]*>([^<]*)</w:t>');
+        final matches = regex.allMatches(xml);
+        final text = matches.map((m) => decodeXmlEntities(m.group(1) ?? '')).join(' ');
+
+        final cleaned = text.replaceAll(RegExp(r'[ ]{2,}'), ' ').trim();
+        return cleaned.isEmpty ? 'DOCX had no readable text.' : cleaned;
+      } catch (e) {
+        return 'Could not extract text from DOCX: $e';
       }
     }
+
+    if (ext == '.xlsx') {
+      try {
+        final bytes = await File(filePath).readAsBytes();
+        final xml = readZipText(bytes, 'xl/sharedStrings.xml');
+        if (xml.isEmpty) {
+          return 'Could not read XLSX text (sharedStrings.xml missing). Export to CSV for best results.';
+        }
+
+        final regex = RegExp(r'<t[^>]*>([^<]*)</t>');
+        final matches = regex.allMatches(xml);
+        final parts = matches.map((m) => decodeXmlEntities(m.group(1) ?? '')).toList();
+
+        final text = parts.join('\n').trim();
+        return text.isEmpty ? 'XLSX had no readable text.' : text;
+      } catch (e) {
+        return 'Could not extract text from XLSX: $e';
+      }
+    }
+
     return await File(filePath).readAsString();
   }
 

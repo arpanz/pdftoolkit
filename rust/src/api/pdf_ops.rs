@@ -6,6 +6,7 @@ use std::time::Instant;
 use anyhow::{anyhow, Result};
 use flutter_rust_bridge::frb;
 use lopdf::{Document, Object, ObjectId};
+use lopdf::content::Operation; // ADDED for decoded content
 
 use super::types::{EncryptionInfo, FileInfo, PdfResult};
 
@@ -30,7 +31,6 @@ fn ok(output_path: String, page_count: u32, start: Instant) -> PdfResult {
 }
 
 fn ok_multi(output_paths: Vec<String>, page_count: u32, start: Instant) -> PdfResult {
-    // For multi-output operations, join paths with '|' separator
     PdfResult {
         success: true,
         output_path: output_paths.join("|"),
@@ -50,17 +50,12 @@ fn err(msg: String) -> PdfResult {
     }
 }
 
-/// Save a document with correct max_id. lopdf's save() sizes the xref table
-/// from self.max_id — if it's 0 (the default for new documents), every object
-/// is invisible and the PDF is corrupt. This helper must be used instead of
-/// raw doc.save() whenever objects have been inserted manually.
 fn save_document(doc: &mut Document, path: &str) -> anyhow::Result<()> {
     doc.max_id = doc.objects.keys().map(|k| k.0).max().unwrap_or(0);
     doc.save(path).map_err(|e| anyhow!("Failed to save PDF: {}", e))?;
     Ok(())
 }
 
-/// Remap all object IDs in `doc` so they start from `start_id`.
 fn remap_ids(doc: &mut Document, start_id: u32) -> u32 {
     let old_ids: Vec<ObjectId> = doc.objects.keys().cloned().collect();
     let mut id_map: BTreeMap<ObjectId, ObjectId> = BTreeMap::new();
@@ -129,7 +124,6 @@ fn ensure_f1_in_resources_dict(res_dict: &mut lopdf::Dictionary, font_id: Object
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 
-/// Merge multiple PDFs into one output file.
 #[frb]
 pub fn merge_pdfs(paths: Vec<String>, output_path: String, add_watermark: bool) -> PdfResult {
     let start = Instant::now();
@@ -237,7 +231,6 @@ fn merge_pdfs_inner(paths: Vec<String>, output_path: &str, add_watermark: bool) 
     Ok(total_pages)
 }
 
-/// Split a PDF: extract specific pages (1-indexed) into a new file.
 #[frb]
 pub fn split_pdf(input_path: String, pages: Vec<u32>, output_path: String, add_watermark: bool) -> PdfResult {
     let start = Instant::now();
@@ -285,7 +278,6 @@ fn split_pdf_inner(input_path: &str, pages: &[u32], output_path: &str, add_water
     Ok(pages.len() as u32)
 }
 
-/// Protect a PDF with password encryption.
 #[frb]
 pub fn protect_pdf(input_path: String, password: String, output_path: String) -> PdfResult {
     let start = Instant::now();
@@ -302,7 +294,6 @@ fn protect_pdf_inner(_input_path: &str, _password: &str, _output_path: &str) -> 
     ))
 }
 
-/// Unlock (remove password from) a PDF.
 #[frb]
 pub fn unlock_pdf(input_path: String, password: String, output_path: String) -> PdfResult {
     let start = Instant::now();
@@ -324,7 +315,6 @@ fn unlock_pdf_inner(input_path: &str, _password: &str, output_path: &str) -> Res
     Ok(page_count)
 }
 
-/// Convert images to a single PDF.
 #[frb]
 pub fn images_to_pdf(image_paths: Vec<String>, output_path: String, add_watermark: bool) -> PdfResult {
     let start = Instant::now();
@@ -444,13 +434,8 @@ fn images_to_pdf_inner(image_paths: Vec<String>, output_path: &str, _add_waterma
     Ok(count)
 }
 
-// ─── NEW: PDF to Images ──────────────────────────────────────────────────────
+// ─── PDF to Images (FIXED) ───────────────────────────────────────────────────
 
-/// Convert each page of a PDF to a JPEG image.
-/// Returns a PdfResult where output_path is '|'-joined list of image paths.
-/// output_dir: directory to save images into.
-/// dpi: rendering DPI (72 = screen, 150 = medium, 300 = print). 
-/// Currently renders via a simple pixel-level approach using lopdf + image crate.
 #[frb]
 pub fn pdf_to_images(input_path: String, output_dir: String, dpi: u32) -> PdfResult {
     let start = Instant::now();
@@ -464,8 +449,10 @@ pub fn pdf_to_images(input_path: String, output_dir: String, dpi: u32) -> PdfRes
 }
 
 fn pdf_to_images_inner(input_path: &str, output_dir: &str, dpi: u32) -> Result<Vec<String>> {
-    let doc = Document::load(input_path)
+    // FIX 1: MUST LOAD AS MUTABLE AND DECOMPRESS
+    let mut doc = Document::load(input_path)
         .map_err(|e| anyhow!("Failed to load PDF: {}", e))?;
+    let _ = doc.decompress();
 
     let pages = doc.get_pages();
     if pages.is_empty() {
@@ -476,36 +463,29 @@ fn pdf_to_images_inner(input_path: &str, output_dir: &str, dpi: u32) -> Result<V
 
     let scale = dpi.max(72) as f64 / 72.0;
     let mut output_paths: Vec<String> = Vec::new();
-
     let mut page_nums: Vec<u32> = pages.keys().copied().collect();
     page_nums.sort();
+
+    let mut any_raster_found = false;
 
     for page_num in page_nums {
         let page_id = pages[&page_num];
 
-        // Get page dimensions from MediaBox
         let (page_w_pt, page_h_pt) = get_page_dimensions(&doc, page_id);
-
-        // Convert points to pixels at target DPI
         let img_w = ((page_w_pt * scale) as u32).max(1);
         let img_h = ((page_h_pt * scale) as u32).max(1);
 
-        // Create a white background image
-        // Note: true PDF rendering (fonts, vectors) requires a full PDF renderer
-        // (like pdfium). Here we extract embedded raster images and composite
-        // them onto a white canvas. Text/vector content will not be rendered.
-        // For production use, integrate pdfium_render or similar.
         let mut canvas = image::RgbImage::new(img_w, img_h);
-        // Fill white
         for pixel in canvas.pixels_mut() {
             *pixel = image::Rgb([255u8, 255u8, 255u8]);
         }
 
-        // Try to extract and composite any image XObjects from the page
-        composite_page_images(&doc, page_id, &mut canvas, scale, page_h_pt)?;
+        let placed = composite_page_images(&doc, page_id, &mut canvas, scale, page_h_pt)?;
+        if placed > 0 {
+            any_raster_found = true;
+        }
 
-        let out_path = Path::new(output_dir)
-            .join(format!("page_{:04}.jpg", page_num));
+        let out_path = Path::new(output_dir).join(format!("page_{:04}.jpg", page_num));
         canvas
             .save_with_format(&out_path, image::ImageFormat::Jpeg)
             .map_err(|e| anyhow!("Failed to save page {}: {}", page_num, e))?;
@@ -513,21 +493,25 @@ fn pdf_to_images_inner(input_path: &str, output_dir: &str, dpi: u32) -> Result<V
         output_paths.push(out_path.to_string_lossy().into_owned());
     }
 
+    // Give clear error if no images found, rather than empty white pages
+    if !any_raster_found {
+        return Err(anyhow!(
+            "No extractable images found. This PDF likely contains only text/vector content."
+        ));
+    }
+
     Ok(output_paths)
 }
 
 fn get_page_dimensions(doc: &Document, page_id: ObjectId) -> (f64, f64) {
-    // Try page dict first, then walk up to parent for inherited MediaBox
     let media_box = doc
         .get_object(page_id)
         .ok()
         .and_then(|o| o.as_dict().ok())
         .and_then(|d| {
-            // Try direct MediaBox
             if let Ok(mb) = d.get(b"MediaBox") {
                 return Some(mb.clone());
             }
-            // Try via Parent
             if let Ok(parent_ref) = d.get(b"Parent").and_then(|r| r.as_reference()) {
                 if let Ok(parent_obj) = doc.get_object(parent_ref) {
                     if let Ok(pd) = parent_obj.as_dict() {
@@ -547,7 +531,6 @@ fn get_page_dimensions(doc: &Document, page_id: ObjectId) -> (f64, f64) {
            return (w.abs() as f64, h.abs() as f64);
         }
     }
-    // Default A4
     (595.0, 842.0)
 }
 
@@ -557,28 +540,52 @@ fn composite_page_images(
     canvas: &mut image::RgbImage,
     scale: f64,
     page_h_pt: f64,
-) -> Result<()> {
+) -> Result<usize> {
     use image::GenericImage;
 
     let page_dict = match doc.get_object(page_id).ok().and_then(|o| o.as_dict().ok()) {
         Some(d) => d.clone(),
-        None => return Ok(()),
+        None => return Ok(0),
     };
 
-    // Get Resources -> XObject dict
-    let xobj_dict: Option<lopdf::Dictionary> = get_xobject_dict(doc, &page_dict);
-    let xobj_dict = match xobj_dict {
+    let xobj_dict = match get_xobject_dict_inherited(doc, page_id, &page_dict) {
         Some(d) => d,
-        None => return Ok(()),
+        None => return Ok(0),
     };
 
-    // Parse content stream for image placement commands (cm matrix + Do)
-    let content_bytes = get_page_content_bytes(doc, &page_dict);
-    let placements = parse_image_placements(&content_bytes);
+    // FIX 2: Decode content streams properly into lopdf Operations instead of parsing strings
+    let content = match doc.get_and_decode_page_content(page_id) {
+        Ok(c) => c,
+        Err(_) => return Ok(0), // No content or failure to decode
+    };
 
-    for (xobj_name, matrix) in &placements {
-        let name_bytes = xobj_name.as_bytes();
-        let xobj_ref = match xobj_dict.get(name_bytes).ok().and_then(|o| o.as_reference().ok()) {
+    let mut current_matrix: Option<[f64; 6]> = None;
+    let mut placements: Vec<(Vec<u8>, [f64; 6])> = Vec::new();
+
+    for Operation { operator, operands } in content.operations {
+        match operator.as_str() {
+            "cm" => {
+                if operands.len() == 6 {
+                    if let Some(m) = operands_to_matrix(&operands) {
+                        current_matrix = Some(m);
+                    }
+                }
+            }
+            "Do" => {
+                if operands.len() == 1 {
+                    if let (Some(m), Object::Name(name)) = (current_matrix.take(), &operands[0]) {
+                        placements.push((name.clone(), m));
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let mut placed_count = 0usize;
+
+    for (name, matrix) in placements {
+        let xobj_ref = match xobj_dict.get(&name).ok().and_then(|o| o.as_reference().ok()) {
             Some(r) => r,
             None => continue,
         };
@@ -588,35 +595,34 @@ fn composite_page_images(
             _ => continue,
         };
 
-        // Only handle Image XObjects with DCTDecode (JPEG) or raw
         let subtype = stream.dict.get(b"Subtype").ok()
             .and_then(|o| o.as_name_str().ok())
-            .unwrap_or("").to_string();
+            .unwrap_or("");
         if subtype != "Image" {
             continue;
         }
 
-        let img_w_px = stream.dict.get(b"Width").ok().and_then(|o| o.as_i64().ok()).unwrap_or(0) as u32;
-        let img_h_px = stream.dict.get(b"Height").ok().and_then(|o| o.as_i64().ok()).unwrap_or(0) as u32;
-        if img_w_px == 0 || img_h_px == 0 {
-            continue;
-        }
+        let filter_name = stream.dict.get(b"Filter").ok()
+            .and_then(|o| o.as_name_str().ok())
+            .unwrap_or("");
 
-        // Decode image bytes
-        let decoded = match image::load_from_memory(&stream.content) {
-            Ok(img) => img,
+        // FIX 3: Get decompressed image bytes if needed
+        let img_bytes = if filter_name == "DCTDecode" {
+            stream.content.clone() // JPEG bytes are ready
+        } else {
+            stream.decompressed_content().unwrap_or_else(|_| stream.content.clone())
+        };
+
+        let decoded = match image::load_from_memory(&img_bytes) {
+            Ok(img) => img.to_rgb8(),
             Err(_) => continue,
         };
-        let decoded = decoded.to_rgb8();
 
-        // [a, b, c, d, e, f] — PDF CTM
-        // For axis-aligned images: a=width_pt, d=height_pt, e=x_pt, f=y_pt
         let a = matrix[0];
         let d = matrix[3];
         let e = matrix[4];
         let f = matrix[5];
 
-        // Convert PDF coords (origin bottom-left) to image coords (origin top-left)
         let dest_x = (e * scale) as i64;
         let dest_y = ((page_h_pt - f - d.abs()) * scale) as i64;
         let dest_w = ((a.abs()) * scale) as u32;
@@ -626,7 +632,6 @@ fn composite_page_images(
             continue;
         }
 
-        // Scale source image to destination size
         let scaled = image::imageops::resize(
             &decoded,
             dest_w,
@@ -634,7 +639,6 @@ fn composite_page_images(
             image::imageops::FilterType::Lanczos3,
         );
 
-        // Composite onto canvas (clip to canvas bounds)
         let canvas_w = canvas.width() as i64;
         let canvas_h = canvas.height() as i64;
         for py in 0..dest_h as i64 {
@@ -647,9 +651,26 @@ fn composite_page_images(
                 }
             }
         }
+        placed_count += 1;
     }
 
-    Ok(())
+    Ok(placed_count)
+}
+
+fn operands_to_matrix(ops: &[Object]) -> Option<[f64; 6]> {
+    let mut nums: Vec<f64> = Vec::with_capacity(6);
+    for o in ops {
+        let v = match o {
+            Object::Integer(i) => *i as f64,
+            Object::Real(r) => *r as f64,
+            _ => return None,
+        };
+        nums.push(v);
+    }
+    if nums.len() != 6 {
+        return None;
+    }
+    Some([nums[0], nums[1], nums[2], nums[3], nums[4], nums[5]])
 }
 
 fn get_xobject_dict(doc: &Document, page_dict: &lopdf::Dictionary) -> Option<lopdf::Dictionary> {
@@ -669,62 +690,29 @@ fn get_xobject_dict(doc: &Document, page_dict: &lopdf::Dictionary) -> Option<lop
     }
 }
 
-fn get_page_content_bytes(doc: &Document, page_dict: &lopdf::Dictionary) -> Vec<u8> {
-    let contents = match page_dict.get(b"Contents") {
-        Ok(c) => c.clone(),
-        Err(_) => return Vec::new(),
-    };
-    match contents {
-        Object::Reference(r) => {
-            doc.get_object(r).ok()
-                .and_then(|o| if let Object::Stream(s) = o { Some(s.content.clone()) } else { None })
-                .unwrap_or_default()
-        }
-        Object::Array(arr) => {
-            arr.iter().flat_map(|o| {
-                if let Ok(r) = o.as_reference() {
-                    doc.get_object(r).ok()
-                        .and_then(|obj| if let Object::Stream(s) = obj { Some(s.content.clone()) } else { None })
-                        .unwrap_or_default()
-                } else {
-                    Vec::new()
-                }
-            }).collect()
-        }
-        _ => Vec::new(),
+// Climb parent tree if resources are inherited
+fn get_xobject_dict_inherited(
+    doc: &Document,
+    page_id: ObjectId,
+    page_dict: &lopdf::Dictionary,
+) -> Option<lopdf::Dictionary> {
+    if let Some(d) = get_xobject_dict(doc, page_dict) {
+        return Some(d);
     }
+    let mut current = Some(page_id);
+    for _ in 0..8 { // limit loop depth
+        let cid = current?;
+        let dict = doc.get_object(cid).ok()?.as_dict().ok()?.clone();
+        if let Some(d) = get_xobject_dict(doc, &dict) {
+            return Some(d);
+        }
+        current = dict.get(b"Parent").ok().and_then(|o| o.as_reference().ok());
+    }
+    None
 }
 
-/// Parse simple `a b c d e f cm /Name Do` sequences from content stream.
-fn parse_image_placements(content: &[u8]) -> Vec<(String, [f64; 6])> {
-    let text = String::from_utf8_lossy(content);
-    let mut results = Vec::new();
-    let mut current_matrix: Option<[f64; 6]> = None;
+// ─── Compress PDF ──────────────────────────────────────────────────────────────
 
-    for line in text.lines() {
-        let tokens: Vec<&str> = line.split_whitespace().collect();
-        if tokens.len() == 7 && tokens[6] == "cm" {
-            let nums: Vec<f64> = tokens[..6].iter()
-                .filter_map(|t| t.parse().ok())
-                .collect();
-            if nums.len() == 6 {
-                current_matrix = Some([nums[0], nums[1], nums[2], nums[3], nums[4], nums[5]]);
-            }
-        } else if tokens.len() == 2 && tokens[1] == "Do" && tokens[0].starts_with('/') {
-            if let Some(matrix) = current_matrix.take() {
-                let name = tokens[0].trim_start_matches('/').to_string();
-                results.push((name, matrix));
-            }
-        }
-    }
-    results
-}
-
-// ─── NEW: Compress PDF ───────────────────────────────────────────────────────
-
-/// Compress a PDF by re-encoding JPEG images at lower quality and
-/// removing metadata / unused objects.
-/// quality: JPEG quality 1-100 (suggested: 60 for high compression, 80 for balanced)
 #[frb]
 pub fn compress_pdf(input_path: String, output_path: String, quality: u32) -> PdfResult {
     let start = Instant::now();
@@ -742,7 +730,6 @@ fn compress_pdf_inner(input_path: &str, output_path: &str, quality: u32) -> Resu
     let quality = quality.clamp(1, 100) as u8;
     let page_count = doc.get_pages().len() as u32;
 
-    // Collect IDs of image streams to re-encode
     let image_ids: Vec<ObjectId> = doc.objects.iter()
         .filter_map(|(id, obj)| {
             if let Object::Stream(stream) = obj {
@@ -765,13 +752,11 @@ fn compress_pdf_inner(input_path: &str, output_path: &str, quality: u32) -> Resu
                 continue;
             }
 
-            // Try to decode whatever image data we have
             let decoded = match image::load_from_memory(&stream.content) {
                 Ok(img) => img.to_rgb8(),
-                Err(_) => continue, // skip if we can't decode (e.g. masks, CCITT)
+                Err(_) => continue,
             };
 
-            // Re-encode at target quality
             let mut new_jpeg: Vec<u8> = Vec::new();
             {
                 use image::codecs::jpeg::JpegEncoder;
@@ -781,7 +766,6 @@ fn compress_pdf_inner(input_path: &str, output_path: &str, quality: u32) -> Resu
                 }
             }
 
-            // Only replace if we actually saved space
             if new_jpeg.len() < stream.content.len() {
                 stream.content = new_jpeg;
                 stream.dict.set("Filter", Object::Name(b"DCTDecode".to_vec()));
@@ -790,7 +774,6 @@ fn compress_pdf_inner(input_path: &str, output_path: &str, quality: u32) -> Resu
         }
     }
 
-    // Remove metadata and info dict to save space
     doc.trailer.remove(b"Info");
 
     if let Some(parent) = Path::new(output_path).parent() {
@@ -800,14 +783,8 @@ fn compress_pdf_inner(input_path: &str, output_path: &str, quality: u32) -> Resu
     Ok(page_count)
 }
 
-// ─── NEW: Sign PDF ───────────────────────────────────────────────────────────
+// ─── Sign PDF ──────────────────────────────────────────────────────────────────
 
-/// Add a visible text/image signature to a PDF page.
-/// sig_image_path: optional path to a PNG/JPEG signature image; if empty, uses text.
-/// signer_name: display name shown in signature.
-/// page_number: 1-indexed page to place signature on.
-/// x, y: position in points from bottom-left.
-/// width, height: signature box dimensions in points.
 #[frb]
 pub fn sign_pdf(
     input_path: String,
@@ -861,10 +838,8 @@ fn sign_pdf_inner(
     let next_base = doc.objects.keys().map(|id| id.0).max().unwrap_or(0) + 1;
 
     if !sig_image_path.is_empty() && Path::new(sig_image_path).exists() {
-        // Image signature
         sign_with_image(&mut doc, page_id, sig_image_path, signer_name, x, y, width, height, next_base)?;
     } else {
-        // Text signature fallback
         sign_with_text(&mut doc, page_id, signer_name, x, y, width, height, next_base)?;
     }
 
@@ -910,7 +885,6 @@ fn sign_with_image(
     img_dict.set("Length", Object::Integer(jpeg_bytes.len() as i64));
     doc.objects.insert(img_id, Object::Stream(lopdf::Stream::new(img_dict, jpeg_bytes)));
 
-    // Content stream: draw image + signer label
     let ts = now_ms();
     let content = format!(
         "q\n{w:.2} 0 0 {h:.2} {x:.2} {y:.2} cm\n/SigImg Do\nQ\n\
@@ -925,7 +899,6 @@ fn sign_with_image(
     cd.set("Length", Object::Integer(content_bytes.len() as i64));
     doc.objects.insert(content_id, Object::Stream(lopdf::Stream::new(cd, content_bytes)));
 
-    // Font object
     let font_id: ObjectId = (next_base + 2, 0);
     let mut fd = lopdf::Dictionary::new();
     fd.set("Type", Object::Name(b"Font".to_vec()));
@@ -946,9 +919,7 @@ fn sign_with_text(
     height: f64,
     next_base: u32,
 ) -> Result<()> {
-    // Draw a rounded box + text
     let content = format!(
-        // Box
         "q\n0.9 0.95 1.0 rg\n{x:.2} {y:.2} {w:.2} {h:.2} re\nf\n\
          0.2 0.4 0.8 RG\n1 w\n{x:.2} {y:.2} {w:.2} {h:.2} re\nS\nQ\n\
          BT\n/F1 9 Tf\n{tx:.2} {ty:.2} Td\n0.1 0.2 0.5 rg\n(Digitally Signed) Tj\n\
@@ -983,7 +954,6 @@ fn inject_sig_resources(
     font_id: ObjectId,
     content_id: ObjectId,
 ) -> Result<()> {
-    // Handle Resources: could be inline dict or indirect reference
     let resources_clone = doc
         .get_object(page_id)
         .ok()
@@ -992,7 +962,6 @@ fn inject_sig_resources(
 
     match resources_clone {
         Some(Object::Reference(res_id)) => {
-            // Inline-mutate the referenced resource dict
             if let Ok(Object::Dictionary(res_dict)) = doc.get_object_mut(res_id) {
                 ensure_f1_in_resources_dict(res_dict, font_id);
                 if let Some(name) = img_name {
@@ -1010,7 +979,6 @@ fn inject_sig_resources(
             }
         }
         _ => {
-            // Build / merge inline resources on the page dict
             if let Ok(page) = doc.get_object_mut(page_id) {
                 if let Ok(dict) = page.as_dict_mut() {
                     let mut res = lopdf::Dictionary::new();
@@ -1028,7 +996,6 @@ fn inject_sig_resources(
         }
     }
 
-    // Append content stream to page
     if let Ok(page) = doc.get_object_mut(page_id) {
         if let Ok(dict) = page.as_dict_mut() {
             let existing = dict.get(b"Contents").ok().cloned();
@@ -1052,12 +1019,8 @@ fn inject_sig_resources(
     Ok(())
 }
 
-// ─── NEW: DOCX/CSV/Excel → PDF ───────────────────────────────────────────────
+// ─── DOCX/CSV/Excel → PDF ────────────────────────────────────────────────────
 
-/// Convert a plain-text file (DOCX exported as .txt, CSV, or raw text) to PDF.
-/// For DOCX: caller should extract text content before calling (e.g. via docx_rs).
-/// This function takes raw UTF-8 text lines and renders them as a paginated PDF.
-/// font_size: point size (suggested 11-12).
 #[frb]
 pub fn text_to_pdf(
     text_content: String,
@@ -1080,24 +1043,20 @@ fn text_to_pdf_inner(
 ) -> Result<u32> {
     let font_size = font_size.clamp(6.0, 36.0);
     let line_height = font_size * 1.4;
-    // A4: 595 x 842 pts, margins: 50pt each side
     let margin = 50.0_f64;
     let page_w = 595.0_f64;
     let page_h = 842.0_f64;
     let usable_w = page_w - 2.0 * margin;
     let usable_h = page_h - 2.0 * margin;
-    // Approximate chars per line at 0.6 * font_size avg char width
     let chars_per_line = ((usable_w / (font_size * 0.55)) as usize).max(20);
     let lines_per_page = ((usable_h / line_height) as usize).max(1);
 
-    // Word-wrap all input lines
     let mut all_lines: Vec<String> = Vec::new();
     for input_line in text_content.lines() {
         if input_line.trim().is_empty() {
             all_lines.push(String::new());
             continue;
         }
-        // Simple word-wrap
         let mut current = String::new();
         for word in input_line.split_whitespace() {
             if current.is_empty() {
@@ -1115,7 +1074,6 @@ fn text_to_pdf_inner(
         }
     }
 
-    // Split into pages
     let pages_content: Vec<Vec<String>> = all_lines
         .chunks(lines_per_page)
         .map(|c| c.to_vec())
@@ -1131,7 +1089,6 @@ fn text_to_pdf_inner(
     let pages_id: ObjectId = (next_id, 0);
     next_id += 1;
 
-    // Font
     let font_id: ObjectId = (next_id, 0);
     next_id += 1;
     let font_bold_id: ObjectId = (next_id, 0);
@@ -1150,7 +1107,6 @@ fn text_to_pdf_inner(
     fdb.set("Encoding", Object::Name(b"WinAnsiEncoding".to_vec()));
     doc.objects.insert(font_bold_id, Object::Dictionary(fdb));
 
-    // Shared Resources
     let res_id: ObjectId = (next_id, 0);
     next_id += 1;
     let mut fonts_dict = lopdf::Dictionary::new();
@@ -1165,7 +1121,6 @@ fn text_to_pdf_inner(
     for (page_idx, page_lines) in pages_content.iter().enumerate() {
         let mut content_ops = String::new();
 
-        // Title on first page
         if page_idx == 0 && !title.is_empty() {
             let safe_title = pdf_escape(title);
             content_ops.push_str(&format!(
@@ -1177,7 +1132,6 @@ fn text_to_pdf_inner(
             ));
         }
 
-        // Body text
         if !page_lines.is_empty() {
             content_ops.push_str(&format!(
                 "BT\n/F1 {:.1} Tf\n{:.2} {:.2} Td\n{:.2} TL\n0.1 0.1 0.1 rg\n",
@@ -1193,7 +1147,6 @@ fn text_to_pdf_inner(
             content_ops.push_str("ET\n");
         }
 
-        // Page number footer
         content_ops.push_str(&format!(
             "BT\n/F1 8 Tf\n{:.2} {:.2} Td\n0.5 0.5 0.5 rg\n(Page {} of {}) Tj\nET\n",
             page_w / 2.0 - 20.0,
@@ -1245,7 +1198,6 @@ fn text_to_pdf_inner(
     Ok(total_pages)
 }
 
-/// Escape special PDF string characters
 fn pdf_escape(s: &str) -> String {
     s.chars()
         .filter(|c| c.is_ascii() && *c != '\x00')
@@ -1258,7 +1210,6 @@ fn pdf_escape(s: &str) -> String {
         .collect()
 }
 
-/// Get page count of a PDF.
 #[frb]
 pub fn get_pdf_page_count(path: String) -> u32 {
     Document::load(&path)
@@ -1266,7 +1217,6 @@ pub fn get_pdf_page_count(path: String) -> u32 {
         .unwrap_or(0)
 }
 
-/// Get file info.
 #[frb]
 pub fn get_file_info(path: String) -> FileInfo {
     let size_bytes = fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
@@ -1276,7 +1226,6 @@ pub fn get_file_info(path: String) -> FileInfo {
     FileInfo { path, size_bytes, page_count, is_encrypted }
 }
 
-/// Check if PDF is encrypted.
 #[frb]
 pub fn get_pdf_encryption_info(path: String) -> EncryptionInfo {
     let (is_encrypted, page_count) = Document::load(&path)
@@ -1284,8 +1233,6 @@ pub fn get_pdf_encryption_info(path: String) -> EncryptionInfo {
         .unwrap_or((false, 0));
     EncryptionInfo { is_encrypted, page_count }
 }
-
-// ─── Internal helpers ────────────────────────────────────────────────────────
 
 fn fit_to_a4(w: f64, h: f64) -> (f64, f64) {
     let scale = (595.0_f64 / w).min(842.0_f64 / h);
@@ -1346,7 +1293,6 @@ fn add_watermark_to_page(doc: &mut Document, page_id: ObjectId) -> Result<()> {
     stream_dict.set("Length", Object::Integer(content_bytes.len() as i64));
     doc.objects.insert(content_id, Object::Stream(lopdf::Stream::new(stream_dict, content_bytes)));
 
-    // Bug #3 fix: handle both inline dict and indirect reference for Resources
     if let Ok(page) = doc.get_object_mut(page_id) {
         if let Ok(dict) = page.as_dict_mut() {
             match dict.get(b"Resources").ok().cloned() {
@@ -1355,9 +1301,7 @@ fn add_watermark_to_page(doc: &mut Document, page_id: ObjectId) -> Result<()> {
                     dict.set("Resources", Object::Dictionary(res_dict));
                 }
                 Some(Object::Reference(res_ref_id)) => {
-                    // Do NOT overwrite the reference — mutate the referenced dict directly.
-                    // We'll handle this after the page borrow is dropped.
-                    let _ = res_ref_id; // handled below
+                    let _ = res_ref_id;
                 }
                 _ => {
                     let mut res = lopdf::Dictionary::new();
@@ -1387,7 +1331,6 @@ fn add_watermark_to_page(doc: &mut Document, page_id: ObjectId) -> Result<()> {
         }
     }
 
-    // Handle indirect Resources reference (after page borrow is released)
     let res_ref_id: Option<ObjectId> = doc
         .get_object(page_id).ok()
         .and_then(|o| o.as_dict().ok())
