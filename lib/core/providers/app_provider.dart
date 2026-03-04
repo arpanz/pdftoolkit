@@ -15,7 +15,7 @@ class AppProvider extends ChangeNotifier {
   bool _isPro = false;
   bool _isDarkMode = true;
   bool _hasSeenOnboarding = false;
-  ColorTheme _colorTheme = ColorTheme.classic;
+  ColorTheme _colorTheme = ColorTheme.ruby;
   bool _initialized = false;
   List<PdfFileModel> _files = [];
   bool _isLoading = false;
@@ -36,7 +36,7 @@ class AppProvider extends ChangeNotifier {
     final themeName = prefs.getString(_colorThemeKey);
     _colorTheme = ColorTheme.values.firstWhere(
       (theme) => theme.name == themeName,
-      orElse: () => ColorTheme.classic,
+      orElse: () => ColorTheme.ruby,
     );
     await _loadFiles(prefs);
     _initialized = true;
