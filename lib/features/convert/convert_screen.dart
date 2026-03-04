@@ -445,8 +445,8 @@ class _ConvertScreenState extends State<ConvertScreen> {
                     _fmt.ext.toUpperCase(),
                     style: TextStyle(
                       color: color,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -536,7 +536,7 @@ class _ConvertScreenState extends State<ConvertScreen> {
                                   _fmt.label,
                                   style: TextStyle(
                                     color: AppColors.textMutedFor(context),
-                                    fontSize: 11,
+                                    fontSize: 12,
                                   ),
                                 ),
                               ],
@@ -562,9 +562,9 @@ class _ConvertScreenState extends State<ConvertScreen> {
                     'FONT SIZE',
                     style: TextStyle(
                       color: AppColors.textSecondaryFor(context),
-                      fontSize: 11,
+                      fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
+                      letterSpacing: 1.0,
                     ),
                   ),
                   Text(
@@ -611,7 +611,7 @@ class _ConvertScreenState extends State<ConvertScreen> {
                   Expanded(
                     child: Text(
                       _fmt.hint,
-                      style: TextStyle(color: color, fontSize: 11),
+                      style: TextStyle(color: color, fontSize: 12),
                     ),
                   ),
                 ],

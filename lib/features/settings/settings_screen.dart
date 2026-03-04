@@ -40,7 +40,7 @@ class SettingsScreen extends StatelessWidget {
                       style: TextStyle(
                         color: textPri,
                         fontSize: 32,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                         letterSpacing: -1.2,
                         height: 1,
                       ),
@@ -197,7 +197,7 @@ class SettingsScreen extends StatelessWidget {
                         SizedBox(height: 6),
                         Text(
                           'BatchPDF  •  v1.0.0',
-                          style: TextStyle(color: textMut, fontSize: 11),
+                          style: TextStyle(color: textMut, fontSize: 12),
                         ),
                       ],
                     ),
@@ -241,9 +241,9 @@ class _SectionLabel extends StatelessWidget {
       color: isDark
           ? AppColors.textMutedFor(context)
           : AppColors.textMutedLight,
-      fontSize: 11,
+      fontSize: 12,
       fontWeight: FontWeight.w700,
-      letterSpacing: 1.8,
+      letterSpacing: 1.2,
     ),
   );
 }

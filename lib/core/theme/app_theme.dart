@@ -93,21 +93,21 @@ class AppTheme {
         onError: Colors.white,
       ),
       textTheme:
-          GoogleFonts.interTextTheme(
+          GoogleFonts.plusJakartaSansTextTheme(
             const TextTheme(
               displayLarge: TextStyle(
                 color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 fontSize: 32,
               ),
               displayMedium: TextStyle(
                 color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 fontSize: 28,
               ),
               headlineLarge: TextStyle(
                 color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 fontSize: 24,
               ),
               headlineMedium: TextStyle(
@@ -143,27 +143,27 @@ class AppTheme {
               ),
             ),
           ).copyWith(
-            displayLarge: GoogleFonts.outfit(
+            displayLarge: GoogleFonts.plusJakartaSans(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               fontSize: 32,
             ),
-            displayMedium: GoogleFonts.outfit(
+            displayMedium: GoogleFonts.plusJakartaSans(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               fontSize: 28,
             ),
-            headlineLarge: GoogleFonts.outfit(
+            headlineLarge: GoogleFonts.plusJakartaSans(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               fontSize: 24,
             ),
-            headlineMedium: GoogleFonts.outfit(
+            headlineMedium: GoogleFonts.plusJakartaSans(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w600,
               fontSize: 20,
             ),
-            headlineSmall: GoogleFonts.outfit(
+            headlineSmall: GoogleFonts.plusJakartaSans(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w600,
               fontSize: 18,
@@ -174,7 +174,7 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.outfit(
+        titleTextStyle: GoogleFonts.plusJakartaSans(
           color: AppColors.textPrimary,
           fontSize: 20,
           fontWeight: FontWeight.w600,
@@ -205,7 +205,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: GoogleFonts.plusJakartaSans(
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
@@ -219,7 +219,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: GoogleFonts.plusJakartaSans(
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
@@ -261,19 +261,21 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.bgCardElevated,
-        contentTextStyle: GoogleFonts.inter(color: AppColors.textPrimary),
+        contentTextStyle: GoogleFonts.plusJakartaSans(
+          color: AppColors.textPrimary,
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         behavior: SnackBarBehavior.floating,
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.bgCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: GoogleFonts.plusJakartaSans(
           color: AppColors.textPrimary,
           fontSize: 18,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
         ),
-        contentTextStyle: GoogleFonts.inter(
+        contentTextStyle: GoogleFonts.plusJakartaSans(
           color: AppColors.textSecondary,
           fontSize: 14,
         ),
@@ -300,21 +302,21 @@ class AppTheme {
         onError: Colors.white,
       ),
       textTheme:
-          GoogleFonts.interTextTheme(
+          GoogleFonts.plusJakartaSansTextTheme(
             const TextTheme(
               displayLarge: TextStyle(
                 color: AppColors.textPrimaryLight,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 fontSize: 32,
               ),
               displayMedium: TextStyle(
                 color: AppColors.textPrimaryLight,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 fontSize: 28,
               ),
               headlineLarge: TextStyle(
                 color: AppColors.textPrimaryLight,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 fontSize: 24,
               ),
               headlineMedium: TextStyle(
@@ -356,27 +358,27 @@ class AppTheme {
               ),
             ),
           ).copyWith(
-            displayLarge: GoogleFonts.outfit(
+            displayLarge: GoogleFonts.plusJakartaSans(
               color: AppColors.textPrimaryLight,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               fontSize: 32,
             ),
-            displayMedium: GoogleFonts.outfit(
+            displayMedium: GoogleFonts.plusJakartaSans(
               color: AppColors.textPrimaryLight,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               fontSize: 28,
             ),
-            headlineLarge: GoogleFonts.outfit(
+            headlineLarge: GoogleFonts.plusJakartaSans(
               color: AppColors.textPrimaryLight,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               fontSize: 24,
             ),
-            headlineMedium: GoogleFonts.outfit(
+            headlineMedium: GoogleFonts.plusJakartaSans(
               color: AppColors.textPrimaryLight,
               fontWeight: FontWeight.w600,
               fontSize: 20,
             ),
-            headlineSmall: GoogleFonts.outfit(
+            headlineSmall: GoogleFonts.plusJakartaSans(
               color: AppColors.textPrimaryLight,
               fontWeight: FontWeight.w600,
               fontSize: 18,
@@ -387,7 +389,7 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.outfit(
+        titleTextStyle: GoogleFonts.plusJakartaSans(
           color: AppColors.textPrimaryLight,
           fontSize: 20,
           fontWeight: FontWeight.w600,
@@ -418,7 +420,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: GoogleFonts.plusJakartaSans(
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
@@ -432,7 +434,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: GoogleFonts.plusJakartaSans(
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
@@ -475,19 +477,21 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.bgCardElevatedLight,
-        contentTextStyle: GoogleFonts.inter(color: AppColors.textPrimaryLight),
+        contentTextStyle: GoogleFonts.plusJakartaSans(
+          color: AppColors.textPrimaryLight,
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         behavior: SnackBarBehavior.floating,
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.bgCardLight,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: GoogleFonts.plusJakartaSans(
           color: AppColors.textPrimaryLight,
           fontSize: 18,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
         ),
-        contentTextStyle: GoogleFonts.inter(
+        contentTextStyle: GoogleFonts.plusJakartaSans(
           color: AppColors.textSecondaryLight,
           fontSize: 14,
         ),

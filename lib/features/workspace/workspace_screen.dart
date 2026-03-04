@@ -214,7 +214,7 @@ class WorkspaceScreen extends StatelessWidget {
                                 style: TextStyle(
                                   color: textPri,
                                   fontSize: 24,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w700,
                                   letterSpacing: -0.8,
                                   height: 1,
                                 ),
@@ -456,9 +456,9 @@ class _SectionBlock extends StatelessWidget {
             section.label.toUpperCase(),
             style: TextStyle(
               color: textMut,
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
-              letterSpacing: 1.8,
+              letterSpacing: 1.2,
             ),
           ),
           const SizedBox(height: 12),
@@ -574,8 +574,8 @@ class _ToolCardState extends State<_ToolCard> {
                     'PRO',
                     style: TextStyle(
                       color: Color(0xFFF59E0B),
-                      fontSize: 8,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
                       letterSpacing: 0.6,
                     ),
                   ),
@@ -657,7 +657,7 @@ class ProPaywallSheet extends StatelessWidget {
                     style: TextStyle(
                       color: textPri,
                       fontSize: 22,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       letterSpacing: -0.6,
                     ),
                   ),

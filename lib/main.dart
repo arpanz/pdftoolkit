@@ -251,8 +251,8 @@ class _NavItem extends StatelessWidget {
                   curve: Curves.easeOutCubic,
                   style: TextStyle(
                     color: isActive ? primary : inactive,
-                    fontSize: 11,
-                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                    fontSize: 12,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                     letterSpacing: isActive ? 0.2 : 0,
                     height: 1,
                   ),
