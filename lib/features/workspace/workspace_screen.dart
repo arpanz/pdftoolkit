@@ -18,7 +18,6 @@ import '../convert/convert_screen.dart';
 class _Tool {
   final IconData icon;
   final String title;
-  final String description;
   final Color color;
   final Widget Function() screenBuilder;
   final bool isPro;
@@ -26,7 +25,6 @@ class _Tool {
   const _Tool({
     required this.icon,
     required this.title,
-    required this.description,
     required this.color,
     required this.screenBuilder,
     this.isPro = false,
@@ -38,14 +36,12 @@ const List<_ToolSection> _sections = [
     _Tool(
       icon: Icons.merge_rounded,
       title: 'Merge',
-      description: 'Combine PDFs',
       color: Color(0xFF3B82F6),
       screenBuilder: MergeScreen.new,
     ),
     _Tool(
       icon: Icons.content_cut_rounded,
       title: 'Split',
-      description: 'Extract pages',
       color: Color(0xFF8B5CF6),
       screenBuilder: SplitScreen.new,
     ),
@@ -54,14 +50,12 @@ const List<_ToolSection> _sections = [
     _Tool(
       icon: Icons.lock_rounded,
       title: 'Protect',
-      description: 'AES encrypt',
       color: Color(0xFF10B981),
       screenBuilder: ProtectScreen.new,
     ),
     _Tool(
       icon: Icons.lock_open_rounded,
       title: 'Unlock',
-      description: 'Remove password',
       color: Color(0xFFF59E0B),
       screenBuilder: UnlockScreen.new,
     ),
@@ -70,21 +64,18 @@ const List<_ToolSection> _sections = [
     _Tool(
       icon: Icons.image_rounded,
       title: 'Images→PDF',
-      description: 'Photos to PDF',
       color: Color(0xFFEF4444),
       screenBuilder: ImageToPdfScreen.new,
     ),
     _Tool(
       icon: Icons.burst_mode_rounded,
       title: 'PDF→Images',
-      description: 'Pages as JPEG',
       color: Color(0xFF06B6D4),
       screenBuilder: PdfToImagesScreen.new,
     ),
     _Tool(
       icon: Icons.upload_file_rounded,
       title: 'File→PDF',
-      description: 'DOCX / XLSX',
       color: Color(0xFF84CC16),
       screenBuilder: ConvertScreen.new,
       isPro: true,
@@ -94,14 +85,12 @@ const List<_ToolSection> _sections = [
     _Tool(
       icon: Icons.compress_rounded,
       title: 'Compress',
-      description: 'Shrink size',
       color: Color(0xFFF97316),
       screenBuilder: CompressScreen.new,
     ),
     _Tool(
       icon: Icons.draw_rounded,
       title: 'Sign',
-      description: 'Add signature',
       color: Color(0xFFEC4899),
       screenBuilder: SignScreen.new,
     ),
@@ -147,7 +136,6 @@ class WorkspaceScreen extends StatelessWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // App icon badge
                         Container(
                           width: 44,
                           height: 44,
@@ -183,14 +171,11 @@ class WorkspaceScreen extends StatelessWidget {
                                 style: TextStyle(
                                   color: textMut,
                                   fontSize: 12,
-                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                             ],
                           ),
                         ),
-
-                        // Theme toggle
                         GestureDetector(
                           onTap: () {
                             HapticFeedback.lightImpact();
@@ -216,7 +201,6 @@ class WorkspaceScreen extends StatelessWidget {
                       ],
                     ),
 
-                    // ── Pro banner (contextual, not header badge) ────
                     if (!isPro) ...[
                       const SizedBox(height: 20),
                       _ProBanner(onTap: () => _showProPaywall(context)),
@@ -229,9 +213,14 @@ class WorkspaceScreen extends StatelessWidget {
                           const Icon(Icons.verified_rounded,
                               color: AppColors.success, size: 14),
                           const SizedBox(width: 6),
-                          Text('Pro Active — unlimited & no watermarks',
-                              style: TextStyle(
-                                  color: AppColors.success, fontSize: 12, fontWeight: FontWeight.w600)),
+                          Text(
+                            'Pro Active — unlimited & no watermarks',
+                            style: TextStyle(
+                              color: AppColors.success,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -240,7 +229,6 @@ class WorkspaceScreen extends StatelessWidget {
               ).animate().fadeIn(duration: 350.ms),
             ),
 
-            // ── Section divider ──────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
@@ -248,7 +236,6 @@ class WorkspaceScreen extends StatelessWidget {
               ),
             ),
 
-            // ── Tools grid by section ─────────────────────────────────
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
               sliver: SliverList(
@@ -311,8 +298,7 @@ class _ProBanner extends StatelessWidget {
             ],
           ),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-              color: const Color(0xFFF59E0B).withOpacity(0.35)),
+          border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.35)),
         ),
         child: Row(
           children: [
@@ -338,7 +324,7 @@ class _ProBanner extends StatelessWidget {
   }
 }
 
-// ── Section block with 2-col grid ─────────────────────────────────────────────
+// ── Section block ─────────────────────────────────────────────────────────────
 class _SectionBlock extends StatelessWidget {
   final _ToolSection section;
   final bool isDark;
@@ -359,7 +345,6 @@ class _SectionBlock extends StatelessWidget {
     final textMut = isDark ? AppColors.textMuted : AppColors.textMutedLight;
     final tools = section.tools;
 
-    // Build rows of 2
     final rows = <Widget>[];
     for (int i = 0; i < tools.length; i += 2) {
       final first = tools[i];
@@ -377,7 +362,7 @@ class _SectionBlock extends StatelessWidget {
                     : () => onToolTap(first),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             if (second != null)
               Expanded(
                 child: _ToolCard(
@@ -394,15 +379,14 @@ class _SectionBlock extends StatelessWidget {
           ],
         ),
       );
-      if (i + 2 < tools.length) rows.add(const SizedBox(height: 12));
+      if (i + 2 < tools.length) rows.add(const SizedBox(height: 10));
     }
 
     return Padding(
-      padding: const EdgeInsets.only(top: 28),
+      padding: const EdgeInsets.only(top: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section label
           Text(
             section.label.toUpperCase(),
             style: TextStyle(
@@ -412,7 +396,7 @@ class _SectionBlock extends StatelessWidget {
               letterSpacing: 1.8,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           ...rows,
         ],
       ),
@@ -420,7 +404,7 @@ class _SectionBlock extends StatelessWidget {
   }
 }
 
-// ── Tool card ─────────────────────────────────────────────────────────────────
+// ── Tool card (compact) ───────────────────────────────────────────────────────
 class _ToolCard extends StatefulWidget {
   final _Tool tool;
   final bool isDark;
@@ -443,16 +427,10 @@ class _ToolCardState extends State<_ToolCard> {
 
   @override
   Widget build(BuildContext context) {
-    final cardCol =
-        widget.isDark ? AppColors.bgCard : AppColors.bgCardLight;
-    final borderCol =
-        widget.isDark ? AppColors.border : AppColors.borderLightMode;
-    final textPri = widget.isDark
-        ? AppColors.textPrimary
-        : AppColors.textPrimaryLight;
-    final textSec = widget.isDark
-        ? AppColors.textSecondary
-        : AppColors.textSecondaryLight;
+    final cardCol = widget.isDark ? AppColors.bgCard : AppColors.bgCardLight;
+    final borderCol = widget.isDark ? AppColors.border : AppColors.borderLightMode;
+    final textPri = widget.isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
+    final textSec = widget.isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
@@ -465,76 +443,67 @@ class _ToolCardState extends State<_ToolCard> {
         scale: _pressed ? 0.96 : 1.0,
         duration: const Duration(milliseconds: 100),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          // ← compact: was all(16), now all(12)
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: cardCol,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: borderCol),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            // ← horizontal layout: icon left, title right — much more compact
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: widget.tool.color.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      widget.tool.icon,
-                      color: widget.isLocked
-                          ? widget.tool.color.withOpacity(0.4)
-                          : widget.tool.color,
-                      size: 20,
+              Container(
+                // ← was 42×42, now 36×36
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: widget.tool.color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  widget.tool.icon,
+                  color: widget.isLocked
+                      ? widget.tool.color.withOpacity(0.35)
+                      : widget.tool.color,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  widget.tool.title,
+                  style: TextStyle(
+                    // ← was 14px, now 13px
+                    color: widget.isLocked ? textSec : textPri,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.2,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (widget.isLocked)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(5),
+                    border: Border.all(
+                        color: const Color(0xFFF59E0B).withOpacity(0.3)),
+                  ),
+                  child: const Text(
+                    'PRO',
+                    style: TextStyle(
+                      color: Color(0xFFF59E0B),
+                      fontSize: 8,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.6,
                     ),
                   ),
-                  if (widget.isLocked)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF59E0B).withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                            color: const Color(0xFFF59E0B).withOpacity(0.3)),
-                      ),
-                      child: const Text(
-                        'PRO',
-                        style: TextStyle(
-                          color: Color(0xFFF59E0B),
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Text(
-                widget.tool.title,
-                style: TextStyle(
-                  color: widget.isLocked
-                      ? textSec
-                      : textPri,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.3,
                 ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                widget.tool.description,
-                style: TextStyle(
-                  color: textSec,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
             ],
           ),
         ),
@@ -552,13 +521,11 @@ class ProPaywallSheet extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColors.bgCard : AppColors.bgCardLight;
     final border = isDark ? AppColors.border : AppColors.borderLightMode;
-    final textPri =
-        isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
-    final textSec =
-        isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
+    final textPri = isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
+    final textSec = isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
 
-    // Locale-aware price string
-    final locale = WidgetsBinding.instance.platformDispatcher.locale.countryCode;
+    final locale =
+        WidgetsBinding.instance.platformDispatcher.locale.countryCode;
     final priceLabel = (locale == 'IN') ? '₹295 one-time' : '\$3.50 one-time';
 
     return Container(
@@ -571,7 +538,6 @@ class ProPaywallSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Drag handle
           Center(
             child: Container(
               width: 40,
@@ -583,8 +549,6 @@ class ProPaywallSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 28),
-
-          // Icon + headline
           Row(
             children: [
               Container(
@@ -604,10 +568,11 @@ class ProPaywallSheet extends StatelessWidget {
                   Text(
                     'BatchPDF Pro',
                     style: TextStyle(
-                        color: textPri,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.6),
+                      color: textPri,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.6,
+                    ),
                   ),
                   Text(
                     'One-time · No subscription · No hidden fees',
@@ -617,9 +582,7 @@ class ProPaywallSheet extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 28),
-
           _ProFeatureRow(
             icon: Icons.all_inclusive_rounded,
             color: AppColors.primary,
@@ -651,10 +614,7 @@ class ProPaywallSheet extends StatelessWidget {
             subtitle: 'DOCX, XLSX, CSV support unlocked',
             isDark: isDark,
           ),
-
           const SizedBox(height: 32),
-
-          // CTA button
           GestureDetector(
             onTap: () {
               HapticFeedback.mediumImpact();
@@ -662,7 +622,8 @@ class ProPaywallSheet extends StatelessWidget {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: const Text('🎉 Pro unlocked! Enjoy unlimited tools.'),
+                  content:
+                      const Text('🎉 Pro unlocked! Enjoy unlimited tools.'),
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
@@ -698,7 +659,6 @@ class ProPaywallSheet extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(height: 12),
           Center(
             child: TextButton(
