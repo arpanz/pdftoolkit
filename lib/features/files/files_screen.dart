@@ -53,7 +53,7 @@ class FilesScreen extends StatelessWidget {
                             height: 1,
                           ),
                         ),
-                        SizedBox(height: 6),
+                        const SizedBox(height: 6),
                         Text(
                           files.isEmpty
                               ? 'No processed files yet'
@@ -108,18 +108,15 @@ class FilesScreen extends StatelessWidget {
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
                       physics: const BouncingScrollPhysics(),
                       itemCount: files.length,
-                      separatorBuilder: (_, __) => SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        return _FileCard(
-                          file: files[index],
-                          isDark: isDark,
-                          onDelete: () =>
-                              _confirmDelete(context, files[index], isDark),
-                          onOpen: () => OpenFilex.open(files[index].path),
-                        ).animate().fadeIn(
-                          delay: Duration(milliseconds: 30 * index),
-                        );
-                      },
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      // ← stagger removed: instant render, no cascading delay
+                      itemBuilder: (context, index) => _FileCard(
+                        file: files[index],
+                        isDark: isDark,
+                        onDelete: () =>
+                            _confirmDelete(context, files[index], isDark),
+                        onOpen: () => OpenFilex.open(files[index].path),
+                      ),
                     ),
             ),
           ],
@@ -128,7 +125,8 @@ class FilesScreen extends StatelessWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context, PdfFileModel file, bool isDark) {
+  void _confirmDelete(
+      BuildContext context, PdfFileModel file, bool isDark) {
     final textPri = isDark
         ? AppColors.textPrimaryFor(context)
         : AppColors.textPrimaryLight;
@@ -141,14 +139,12 @@ class FilesScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: bg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           'Delete file?',
           style: TextStyle(
-            color: textPri,
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-          ),
+              color: textPri, fontSize: 17, fontWeight: FontWeight.w700),
         ),
         content: Text(
           '"${file.name}" will be permanently removed.',
@@ -160,10 +156,9 @@ class FilesScreen extends StatelessWidget {
             child: Text(
               'Cancel',
               style: TextStyle(
-                color: isDark
-                    ? AppColors.textMutedFor(context)
-                    : AppColors.textMutedLight,
-              ),
+                  color: isDark
+                      ? AppColors.textMutedFor(context)
+                      : AppColors.textMutedLight),
             ),
           ),
           TextButton(
@@ -171,7 +166,8 @@ class FilesScreen extends StatelessWidget {
               Navigator.pop(ctx);
               context.read<AppProvider>().deleteFile(file.id);
             },
-            child: Text('Delete', style: TextStyle(color: AppColors.error)),
+            child: const Text('Delete',
+                style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -206,16 +202,15 @@ class _EmptyState extends StatelessWidget {
                 color: AppColors.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.15),
+                    color: AppColors.primary.withValues(alpha: 0.15)),
+              ),
+              child: const Icon(Icons.folder_open_rounded,
+                  color: AppColors.primary, size: 32),
+            ).animate().scale(
+                  duration: 500.ms,
+                  curve: Curves.elasticOut,
                 ),
-              ),
-              child: Icon(
-                Icons.folder_open_rounded,
-                color: AppColors.primary,
-                size: 32,
-              ),
-            ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             Text(
               'Nothing here yet',
               style: TextStyle(
@@ -225,22 +220,19 @@ class _EmptyState extends StatelessWidget {
                 letterSpacing: -0.5,
               ),
             ).animate().fadeIn(delay: 150.ms),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Text(
               'Files you process with any tool will\nappear here automatically.',
               style: TextStyle(color: textSec, fontSize: 14, height: 1.65),
               textAlign: TextAlign.center,
             ).animate().fadeIn(delay: 200.ms),
-            SizedBox(height: 32),
+            const SizedBox(height: 32),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.touch_app_rounded,
-                  color: AppColors.primary,
-                  size: 16,
-                ),
-                SizedBox(width: 6),
+                const Icon(Icons.touch_app_rounded,
+                    color: AppColors.primary, size: 16),
+                const SizedBox(width: 6),
                 Text(
                   'Go to Tools to get started',
                   style: TextStyle(
@@ -319,25 +311,20 @@ class _FileCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.error.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.error.withValues(alpha: 0.25)),
+          border: Border.all(
+              color: AppColors.error.withValues(alpha: 0.25)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.delete_outline_rounded,
-              color: AppColors.error,
-              size: 22,
-            ),
-            SizedBox(height: 4),
-            Text(
-              'Delete',
-              style: TextStyle(
-                color: AppColors.error,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            const Icon(Icons.delete_outline_rounded,
+                color: AppColors.error, size: 22),
+            const SizedBox(height: 4),
+            Text('Delete',
+                style: TextStyle(
+                    color: AppColors.error,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600)),
           ],
         ),
       ),
@@ -352,7 +339,6 @@ class _FileCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // Icon
               Container(
                 width: 48,
                 height: 48,
@@ -360,15 +346,10 @@ class _FileCard extends StatelessWidget {
                   color: _opColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(
-                  Icons.picture_as_pdf_rounded,
-                  color: _opColor,
-                  size: 24,
-                ),
+                child: Icon(Icons.picture_as_pdf_rounded,
+                    color: _opColor, size: 24),
               ),
-              SizedBox(width: 14),
-
-              // Details
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,14 +365,12 @@ class _FileCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    SizedBox(height: 6),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 2,
-                          ),
+                              horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
                             color: _opColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
@@ -405,14 +384,14 @@ class _FileCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           '${file.formattedSize}  ·  ${file.pageCount}p',
                           style: TextStyle(color: textMut, fontSize: 11),
                         ),
                       ],
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       dateStr,
                       style: TextStyle(color: textMut, fontSize: 11),
@@ -420,9 +399,7 @@ class _FileCard extends StatelessWidget {
                   ],
                 ),
               ),
-
-              SizedBox(width: 8),
-              // Open icon
+              const SizedBox(width: 8),
               Icon(Icons.open_in_new_rounded, color: textMut, size: 16),
             ],
           ),
