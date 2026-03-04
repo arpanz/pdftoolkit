@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'color_schemes.dart';
 
 class AppColors {
   // Brand
@@ -73,83 +74,116 @@ class AppColors {
 }
 
 class AppTheme {
-  static ThemeData darkTheme() {
+  static ThemeData darkTheme(ColorSchemeData scheme) {
+    final primary = scheme.primaryGradient.first;
+    final accent = scheme.accent;
+    final error = scheme.error;
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.bgDark,
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.primary,
-        secondary: AppColors.accent,
+      colorScheme: ColorScheme.dark(
+        primary: primary,
+        secondary: accent,
         surface: AppColors.bgCard,
-        error: AppColors.error,
+        error: error,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: AppColors.textPrimary,
         onError: Colors.white,
       ),
-      textTheme: GoogleFonts.interTextTheme(
-        const TextTheme(
-          displayLarge: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-            fontSize: 32,
+      textTheme:
+          GoogleFonts.interTextTheme(
+            const TextTheme(
+              displayLarge: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 32,
+              ),
+              displayMedium: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 28,
+              ),
+              headlineLarge: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 24,
+              ),
+              headlineMedium: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 20,
+              ),
+              headlineSmall: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+              titleLarge: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+              titleMedium: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+              ),
+              bodyLarge: TextStyle(color: AppColors.textPrimary, fontSize: 16),
+              bodyMedium: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 14,
+              ),
+              bodySmall: TextStyle(color: AppColors.textMuted, fontSize: 12),
+              labelLarge: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ).copyWith(
+            displayLarge: GoogleFonts.outfit(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+              fontSize: 32,
+            ),
+            displayMedium: GoogleFonts.outfit(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+              fontSize: 28,
+            ),
+            headlineLarge: GoogleFonts.outfit(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+              fontSize: 24,
+            ),
+            headlineMedium: GoogleFonts.outfit(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+              fontSize: 20,
+            ),
+            headlineSmall: GoogleFonts.outfit(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+            ),
           ),
-          displayMedium: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-            fontSize: 28,
-          ),
-          headlineLarge: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-            fontSize: 24,
-          ),
-          headlineMedium: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
-          ),
-          headlineSmall: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-          titleLarge: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-          titleMedium: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w500,
-            fontSize: 14,
-          ),
-          bodyLarge: TextStyle(color: AppColors.textPrimary, fontSize: 16),
-          bodyMedium: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-          bodySmall: TextStyle(color: AppColors.textMuted, fontSize: 12),
-          labelLarge: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
-        ),
-      ),
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.bgDark,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: GoogleFonts.outfit(
           color: AppColors.textPrimary,
           fontSize: 20,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
         ),
         iconTheme: const IconThemeData(color: AppColors.textPrimary),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.bgCard,
-        selectedItemColor: AppColors.primary,
+        selectedItemColor: AppColors.textPrimary,
         unselectedItemColor: AppColors.textMuted,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
@@ -159,12 +193,12 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.border),
+          side: BorderSide.none,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
+          backgroundColor: primary,
           foregroundColor: Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
@@ -179,8 +213,8 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          side: const BorderSide(color: AppColors.primary, width: 1.5),
+          foregroundColor: primary,
+          side: BorderSide(color: primary, width: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -204,7 +238,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: primary, width: 2),
         ),
         labelStyle: const TextStyle(color: AppColors.textSecondary),
         hintStyle: const TextStyle(color: AppColors.textMuted),
@@ -216,13 +250,12 @@ class AppTheme {
       iconTheme: const IconThemeData(color: AppColors.textSecondary),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(
-          (s) => s.contains(WidgetState.selected)
-              ? AppColors.primary
-              : AppColors.textMuted,
+          (s) =>
+              s.contains(WidgetState.selected) ? primary : AppColors.textMuted,
         ),
         trackColor: WidgetStateProperty.resolveWith(
           (s) => s.contains(WidgetState.selected)
-              ? AppColors.primary.withValues(alpha: 0.3)
+              ? primary.withValues(alpha: 0.3)
               : AppColors.bgSurface,
         ),
       ),
@@ -248,86 +281,122 @@ class AppTheme {
     );
   }
 
-  static ThemeData lightTheme() {
+  static ThemeData lightTheme(ColorSchemeData scheme) {
+    final primary = scheme.primaryGradient.first;
+    final accent = scheme.accent;
+    final error = scheme.error;
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.bgLight,
-      colorScheme: const ColorScheme.light(
-        primary: AppColors.primary,
-        secondary: AppColors.accent,
+      colorScheme: ColorScheme.light(
+        primary: primary,
+        secondary: accent,
         surface: AppColors.bgCardLight,
-        error: AppColors.error,
+        error: error,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: AppColors.textPrimaryLight,
         onError: Colors.white,
       ),
-      textTheme: GoogleFonts.interTextTheme(
-        const TextTheme(
-          displayLarge: TextStyle(
-            color: AppColors.textPrimaryLight,
-            fontWeight: FontWeight.w700,
-            fontSize: 32,
+      textTheme:
+          GoogleFonts.interTextTheme(
+            const TextTheme(
+              displayLarge: TextStyle(
+                color: AppColors.textPrimaryLight,
+                fontWeight: FontWeight.w700,
+                fontSize: 32,
+              ),
+              displayMedium: TextStyle(
+                color: AppColors.textPrimaryLight,
+                fontWeight: FontWeight.w700,
+                fontSize: 28,
+              ),
+              headlineLarge: TextStyle(
+                color: AppColors.textPrimaryLight,
+                fontWeight: FontWeight.w700,
+                fontSize: 24,
+              ),
+              headlineMedium: TextStyle(
+                color: AppColors.textPrimaryLight,
+                fontWeight: FontWeight.w600,
+                fontSize: 20,
+              ),
+              headlineSmall: TextStyle(
+                color: AppColors.textPrimaryLight,
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+              titleLarge: TextStyle(
+                color: AppColors.textPrimaryLight,
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+              titleMedium: TextStyle(
+                color: AppColors.textPrimaryLight,
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+              ),
+              bodyLarge: TextStyle(
+                color: AppColors.textPrimaryLight,
+                fontSize: 16,
+              ),
+              bodyMedium: TextStyle(
+                color: AppColors.textSecondaryLight,
+                fontSize: 14,
+              ),
+              bodySmall: TextStyle(
+                color: AppColors.textMutedLight,
+                fontSize: 12,
+              ),
+              labelLarge: TextStyle(
+                color: AppColors.textPrimaryLight,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ).copyWith(
+            displayLarge: GoogleFonts.outfit(
+              color: AppColors.textPrimaryLight,
+              fontWeight: FontWeight.w700,
+              fontSize: 32,
+            ),
+            displayMedium: GoogleFonts.outfit(
+              color: AppColors.textPrimaryLight,
+              fontWeight: FontWeight.w700,
+              fontSize: 28,
+            ),
+            headlineLarge: GoogleFonts.outfit(
+              color: AppColors.textPrimaryLight,
+              fontWeight: FontWeight.w700,
+              fontSize: 24,
+            ),
+            headlineMedium: GoogleFonts.outfit(
+              color: AppColors.textPrimaryLight,
+              fontWeight: FontWeight.w600,
+              fontSize: 20,
+            ),
+            headlineSmall: GoogleFonts.outfit(
+              color: AppColors.textPrimaryLight,
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+            ),
           ),
-          displayMedium: TextStyle(
-            color: AppColors.textPrimaryLight,
-            fontWeight: FontWeight.w700,
-            fontSize: 28,
-          ),
-          headlineLarge: TextStyle(
-            color: AppColors.textPrimaryLight,
-            fontWeight: FontWeight.w700,
-            fontSize: 24,
-          ),
-          headlineMedium: TextStyle(
-            color: AppColors.textPrimaryLight,
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
-          ),
-          headlineSmall: TextStyle(
-            color: AppColors.textPrimaryLight,
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
-          titleLarge: TextStyle(
-            color: AppColors.textPrimaryLight,
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-          titleMedium: TextStyle(
-            color: AppColors.textPrimaryLight,
-            fontWeight: FontWeight.w500,
-            fontSize: 14,
-          ),
-          bodyLarge: TextStyle(color: AppColors.textPrimaryLight, fontSize: 16),
-          bodyMedium: TextStyle(
-            color: AppColors.textSecondaryLight,
-            fontSize: 14,
-          ),
-          bodySmall: TextStyle(color: AppColors.textMutedLight, fontSize: 12),
-          labelLarge: TextStyle(
-            color: AppColors.textPrimaryLight,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
-        ),
-      ),
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.bgLight,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: GoogleFonts.outfit(
           color: AppColors.textPrimaryLight,
           fontSize: 20,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
         ),
         iconTheme: const IconThemeData(color: AppColors.textPrimaryLight),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.bgCardLight,
-        selectedItemColor: AppColors.primary,
+        selectedItemColor: AppColors.textPrimaryLight,
         unselectedItemColor: AppColors.textMutedLight,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
@@ -337,12 +406,12 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.borderLightMode),
+          side: BorderSide.none,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
+          backgroundColor: primary,
           foregroundColor: Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
@@ -357,8 +426,8 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          side: const BorderSide(color: AppColors.primary, width: 1.5),
+          foregroundColor: primary,
+          side: BorderSide(color: primary, width: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -382,7 +451,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: primary, width: 2),
         ),
         labelStyle: const TextStyle(color: AppColors.textSecondaryLight),
         hintStyle: const TextStyle(color: AppColors.textMutedLight),
@@ -395,12 +464,12 @@ class AppTheme {
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(
           (s) => s.contains(WidgetState.selected)
-              ? AppColors.primary
+              ? primary
               : AppColors.textMutedLight,
         ),
         trackColor: WidgetStateProperty.resolveWith(
           (s) => s.contains(WidgetState.selected)
-              ? AppColors.primary.withValues(alpha: 0.3)
+              ? primary.withValues(alpha: 0.3)
               : AppColors.bgSurfaceLight,
         ),
       ),

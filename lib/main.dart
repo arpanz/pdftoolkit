@@ -2,6 +2,7 @@
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/color_schemes.dart';
 import 'core/providers/app_provider.dart';
 import 'features/workspace/workspace_screen.dart';
 import 'features/files/files_screen.dart';
@@ -27,6 +28,7 @@ class BatchPdfApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<AppProvider>();
     final isDark = provider.isDarkMode;
+    final scheme = AppColorSchemes.getScheme(provider.colorTheme);
 
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
@@ -44,8 +46,8 @@ class BatchPdfApp extends StatelessWidget {
     return MaterialApp(
       title: 'BatchPDF',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme(),
-      darkTheme: AppTheme.darkTheme(),
+      theme: AppTheme.lightTheme(scheme),
+      darkTheme: AppTheme.darkTheme(scheme),
       themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
       home: const _StartupGate(),
     );

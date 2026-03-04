@@ -3,16 +3,19 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/pdf_file_model.dart';
+import '../theme/color_schemes.dart';
 
 class AppProvider extends ChangeNotifier {
   static const String _filesKey = 'pdf_files';
   static const String _proKey = 'is_pro';
   static const String _darkModeKey = 'dark_mode';
   static const String _onboardingSeenKey = 'onboarding_seen';
+  static const String _colorThemeKey = 'color_theme';
 
   bool _isPro = false;
   bool _isDarkMode = true;
   bool _hasSeenOnboarding = false;
+  ColorTheme _colorTheme = ColorTheme.classic;
   bool _initialized = false;
   List<PdfFileModel> _files = [];
   bool _isLoading = false;
@@ -20,6 +23,7 @@ class AppProvider extends ChangeNotifier {
   bool get isPro => _isPro;
   bool get isDarkMode => _isDarkMode;
   bool get hasSeenOnboarding => _hasSeenOnboarding;
+  ColorTheme get colorTheme => _colorTheme;
   bool get initialized => _initialized;
   List<PdfFileModel> get files => List.unmodifiable(_files);
   bool get isLoading => _isLoading;
@@ -29,6 +33,11 @@ class AppProvider extends ChangeNotifier {
     _isPro = prefs.getBool(_proKey) ?? false;
     _isDarkMode = prefs.getBool(_darkModeKey) ?? true;
     _hasSeenOnboarding = prefs.getBool(_onboardingSeenKey) ?? false;
+    final themeName = prefs.getString(_colorThemeKey);
+    _colorTheme = ColorTheme.values.firstWhere(
+      (theme) => theme.name == themeName,
+      orElse: () => ColorTheme.classic,
+    );
     await _loadFiles(prefs);
     _initialized = true;
     notifyListeners();
@@ -85,6 +94,14 @@ class AppProvider extends ChangeNotifier {
     _isDarkMode = !_isDarkMode;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_darkModeKey, _isDarkMode);
+    notifyListeners();
+  }
+
+  Future<void> setColorTheme(ColorTheme theme) async {
+    if (_colorTheme == theme) return;
+    _colorTheme = theme;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_colorThemeKey, theme.name);
     notifyListeners();
   }
 

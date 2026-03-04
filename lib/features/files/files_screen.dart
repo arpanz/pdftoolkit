@@ -81,7 +81,20 @@ class FilesScreen extends StatelessWidget {
                               ? AppColors.cardFor(context)
                               : AppColors.bgCardLight,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: borderCol),
+                          border: Border.all(
+                            color: borderCol.withValues(
+                              alpha: isDark ? 0.45 : 0.8,
+                            ),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(
+                                alpha: isDark ? 0.24 : 0.06,
+                              ),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
                         ),
                         child: Icon(
                           Icons.refresh_rounded,
@@ -108,7 +121,7 @@ class FilesScreen extends StatelessWidget {
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
                       physics: const BouncingScrollPhysics(),
                       itemCount: files.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      separatorBuilder: (_, index) => const SizedBox(height: 8),
                       // ← stagger removed: instant render, no cascading delay
                       itemBuilder: (context, index) => _FileCard(
                         file: files[index],
@@ -125,8 +138,7 @@ class FilesScreen extends StatelessWidget {
     );
   }
 
-  void _confirmDelete(
-      BuildContext context, PdfFileModel file, bool isDark) {
+  void _confirmDelete(BuildContext context, PdfFileModel file, bool isDark) {
     final textPri = isDark
         ? AppColors.textPrimaryFor(context)
         : AppColors.textPrimaryLight;
@@ -139,12 +151,14 @@ class FilesScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: bg,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           'Delete file?',
           style: TextStyle(
-              color: textPri, fontSize: 17, fontWeight: FontWeight.w700),
+            color: textPri,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         content: Text(
           '"${file.name}" will be permanently removed.',
@@ -156,9 +170,10 @@ class FilesScreen extends StatelessWidget {
             child: Text(
               'Cancel',
               style: TextStyle(
-                  color: isDark
-                      ? AppColors.textMutedFor(context)
-                      : AppColors.textMutedLight),
+                color: isDark
+                    ? AppColors.textMutedFor(context)
+                    : AppColors.textMutedLight,
+              ),
             ),
           ),
           TextButton(
@@ -166,8 +181,10 @@ class FilesScreen extends StatelessWidget {
               Navigator.pop(ctx);
               context.read<AppProvider>().deleteFile(file.id);
             },
-            child: const Text('Delete',
-                style: TextStyle(color: AppColors.error)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.error),
+            ),
           ),
         ],
       ),
@@ -202,14 +219,15 @@ class _EmptyState extends StatelessWidget {
                 color: AppColors.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.15)),
-              ),
-              child: const Icon(Icons.folder_open_rounded,
-                  color: AppColors.primary, size: 32),
-            ).animate().scale(
-                  duration: 500.ms,
-                  curve: Curves.elasticOut,
+                  color: AppColors.primary.withValues(alpha: 0.15),
                 ),
+              ),
+              child: const Icon(
+                Icons.folder_open_rounded,
+                color: AppColors.primary,
+                size: 32,
+              ),
+            ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
             const SizedBox(height: 24),
             Text(
               'Nothing here yet',
@@ -230,8 +248,11 @@ class _EmptyState extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.touch_app_rounded,
-                    color: AppColors.primary, size: 16),
+                const Icon(
+                  Icons.touch_app_rounded,
+                  color: AppColors.primary,
+                  size: 16,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   'Go to Tools to get started',
@@ -311,20 +332,25 @@ class _FileCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.error.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-              color: AppColors.error.withValues(alpha: 0.25)),
+          border: Border.all(color: AppColors.error.withValues(alpha: 0.25)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.delete_outline_rounded,
-                color: AppColors.error, size: 22),
+            const Icon(
+              Icons.delete_outline_rounded,
+              color: AppColors.error,
+              size: 22,
+            ),
             const SizedBox(height: 4),
-            Text('Delete',
-                style: TextStyle(
-                    color: AppColors.error,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600)),
+            Text(
+              'Delete',
+              style: TextStyle(
+                color: AppColors.error,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       ),
@@ -335,7 +361,17 @@ class _FileCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: cardCol,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: borderCol),
+            border: Border.all(
+              color: borderCol.withValues(alpha: isDark ? 0.45 : 0.78),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _opColor.withValues(alpha: isDark ? 0.16 : 0.09),
+                blurRadius: 22,
+                spreadRadius: 1,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: Row(
             children: [
@@ -343,11 +379,21 @@ class _FileCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: _opColor.withValues(alpha: 0.1),
+                  color: _opColor.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _opColor.withValues(alpha: 0.22),
+                      blurRadius: 16,
+                      spreadRadius: 1,
+                    ),
+                  ],
                 ),
-                child: Icon(Icons.picture_as_pdf_rounded,
-                    color: _opColor, size: 24),
+                child: Icon(
+                  Icons.picture_as_pdf_rounded,
+                  color: _opColor,
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -370,7 +416,9 @@ class _FileCard extends StatelessWidget {
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 7, vertical: 2),
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: _opColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),

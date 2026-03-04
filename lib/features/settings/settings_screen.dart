@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/color_schemes.dart';
 import '../../core/providers/app_provider.dart';
 import '../workspace/workspace_screen.dart' show ProPaywallSheet;
 
@@ -110,6 +111,19 @@ class SettingsScreen extends StatelessWidget {
                       ),
                     ],
                   ).animate().fadeIn(delay: 80.ms),
+                  SizedBox(height: 12),
+                  _Card(
+                    isDark: isDark,
+                    children: [
+                      _ThemeSelector(
+                        isDark: isDark,
+                        selectedTheme: appProvider.colorTheme,
+                        onThemeSelected: (theme) {
+                          appProvider.setColorTheme(theme);
+                        },
+                      ),
+                    ],
+                  ).animate().fadeIn(delay: 120.ms),
 
                   SizedBox(height: 28),
                   _SectionLabel(text: 'EXPLORE MORE APPS', isDark: isDark),
@@ -263,9 +277,134 @@ class _Card extends StatelessWidget {
             ? AppColors.borderFor(context)
             : AppColors.borderLightMode,
       ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: isDark ? 0.26 : 0.06),
+          blurRadius: 24,
+          offset: const Offset(0, 10),
+        ),
+      ],
     ),
     child: Column(children: children),
   );
+}
+
+class _ThemeSelector extends StatelessWidget {
+  final bool isDark;
+  final ColorTheme selectedTheme;
+  final ValueChanged<ColorTheme> onThemeSelected;
+
+  const _ThemeSelector({
+    required this.isDark,
+    required this.selectedTheme,
+    required this.onThemeSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textMut = isDark
+        ? AppColors.textMutedFor(context)
+        : AppColors.textMutedLight;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Color Theme',
+            style: TextStyle(
+              color: isDark
+                  ? AppColors.textPrimaryFor(context)
+                  : AppColors.textPrimaryLight,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            'Pick a palette for buttons, accents, and highlights.',
+            style: TextStyle(color: textMut, fontSize: 12),
+          ),
+          SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: ColorTheme.values.map((theme) {
+              final scheme = AppColorSchemes.getScheme(theme);
+              final isSelected = theme == selectedTheme;
+              return _ThemeChip(
+                scheme: scheme,
+                isSelected: isSelected,
+                isDark: isDark,
+                onTap: () => onThemeSelected(theme),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThemeChip extends StatelessWidget {
+  final ColorSchemeData scheme;
+  final bool isSelected;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _ThemeChip({
+    required this.scheme,
+    required this.isSelected,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = isSelected
+        ? scheme.primaryGradient.first
+        : (isDark ? AppColors.borderFor(context) : AppColors.borderLightMode);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor),
+          gradient: LinearGradient(colors: scheme.primaryGradient),
+          boxShadow: [
+            if (isSelected)
+              BoxShadow(
+                color: scheme.primaryGradient.first.withValues(alpha: 0.35),
+                blurRadius: 16,
+                spreadRadius: 1,
+                offset: const Offset(0, 6),
+              ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(scheme.icon, color: Colors.white, size: 14),
+            SizedBox(width: 6),
+            Text(
+              scheme.name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _Divider extends StatelessWidget {
@@ -310,6 +449,13 @@ class _ToggleTile extends StatelessWidget {
           decoration: BoxDecoration(
             color: iconColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(
+                color: iconColor.withValues(alpha: 0.2),
+                blurRadius: 12,
+                spreadRadius: 1,
+              ),
+            ],
           ),
           child: Icon(icon, color: iconColor, size: 18),
         ),
@@ -377,6 +523,13 @@ class _LinkTile extends StatelessWidget {
             decoration: BoxDecoration(
               color: iconColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: iconColor.withValues(alpha: 0.2),
+                  blurRadius: 12,
+                  spreadRadius: 1,
+                ),
+              ],
             ),
             child: Icon(icon, color: iconColor, size: 18),
           ),

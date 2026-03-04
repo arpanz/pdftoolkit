@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum ColorTheme { classic, lavender, amber, coral, forest, chrome }
+enum ColorTheme { classic, ruby, lavender, amber, coral, forest, chrome }
 
 class ColorSchemeData {
   final String name;
@@ -35,6 +35,17 @@ class AppColorSchemes {
       warning: Color(0xFFF59E0B),
       error: Color(0xFFEF4444),
       icon: Icons.water_drop_rounded,
+    ),
+
+    ColorTheme.ruby: ColorSchemeData(
+      name: 'Ruby Crimson',
+      description: 'The universal standard for PDF',
+      primaryGradient: [Color(0xFFE11D48), Color(0xFF9F1239)],
+      accent: Color(0xFFF59E0B),
+      success: Color(0xFF10B981),
+      warning: Color(0xFFF59E0B),
+      error: Color(0xFFDC2626),
+      icon: Icons.picture_as_pdf_rounded,
     ),
 
     ColorTheme.lavender: ColorSchemeData(
