@@ -17,8 +17,12 @@ class FilesScreen extends StatelessWidget {
     final files = provider.files;
     final isDark = provider.isDarkMode;
     final bg = isDark ? AppColors.bgDark : AppColors.bgLight;
-    final textPri = isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
-    final textMut = isDark ? AppColors.textMuted : AppColors.textMutedLight;
+    final textPri =
+        isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
+    final textMut =
+        isDark ? AppColors.textMuted : AppColors.textMutedLight;
+    final borderCol =
+        isDark ? AppColors.border : AppColors.borderLightMode;
 
     return Scaffold(
       backgroundColor: bg,
@@ -26,10 +30,11 @@ class FilesScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            // ── Header ────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Expanded(
                     child: Column(
@@ -49,10 +54,10 @@ class FilesScreen extends StatelessWidget {
                         Text(
                           files.isEmpty
                               ? 'No processed files yet'
-                              : '${files.length} file${files.length == 1 ? '' : 's'}',
+                              : '${files.length} file${files.length == 1 ? '' : 's'} · swipe left to delete',
                           style: TextStyle(
                             color: textMut,
-                            fontSize: 14,
+                            fontSize: 13,
                             fontWeight: FontWeight.w400,
                           ),
                         ),
@@ -73,11 +78,7 @@ class FilesScreen extends StatelessWidget {
                               ? AppColors.bgCard
                               : AppColors.bgCardLight,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isDark
-                                ? AppColors.border
-                                : AppColors.borderLightMode,
-                          ),
+                          border: Border.all(color: borderCol),
                         ),
                         child: Icon(
                           Icons.refresh_rounded,
@@ -90,33 +91,31 @@ class FilesScreen extends StatelessWidget {
               ).animate().fadeIn(duration: 300.ms),
             ),
 
-            // Divider
+            // ── Divider ───────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
-              child: Divider(
-                color: isDark ? AppColors.border : AppColors.borderLightMode,
-                height: 1,
-              ),
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+              child: Divider(color: borderCol, height: 1),
             ),
 
-            // List
+            // ── List ─────────────────────────────────────────────────
             Expanded(
               child: files.isEmpty
                   ? _EmptyState(isDark: isDark)
-                  : ListView.builder(
+                  : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
                       physics: const BouncingScrollPhysics(),
                       itemCount: files.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
                       itemBuilder: (context, index) {
-                        return _FileRow(
+                        return _FileCard(
                           file: files[index],
                           isDark: isDark,
                           onDelete: () =>
                               _confirmDelete(context, files[index], isDark),
                           onOpen: () => OpenFilex.open(files[index].path),
                         ).animate().fadeIn(
-                          delay: Duration(milliseconds: 30 * index),
-                        );
+                              delay: Duration(milliseconds: 30 * index),
+                            );
                       },
                     ),
             ),
@@ -126,28 +125,27 @@ class FilesScreen extends StatelessWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context, PdfFileModel file, bool isDark) {
-    final textPri = isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
-    final textSec = isDark
-        ? AppColors.textSecondary
-        : AppColors.textSecondaryLight;
+  void _confirmDelete(
+      BuildContext context, PdfFileModel file, bool isDark) {
+    final textPri =
+        isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
+    final textSec =
+        isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
     final bg = isDark ? AppColors.bgCard : AppColors.bgCardLight;
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: bg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
         title: Text(
           'Delete file?',
           style: TextStyle(
-            color: textPri,
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-          ),
+              color: textPri, fontSize: 17, fontWeight: FontWeight.w700),
         ),
         content: Text(
-          '"${file.name}" will be permanently removed from your device.',
+          '"${file.name}" will be permanently removed.',
           style: TextStyle(color: textSec, fontSize: 14, height: 1.5),
         ),
         actions: [
@@ -156,8 +154,9 @@ class FilesScreen extends StatelessWidget {
             child: Text(
               'Cancel',
               style: TextStyle(
-                color: isDark ? AppColors.textMuted : AppColors.textMutedLight,
-              ),
+                  color: isDark
+                      ? AppColors.textMuted
+                      : AppColors.textMutedLight),
             ),
           ),
           TextButton(
@@ -165,10 +164,8 @@ class FilesScreen extends StatelessWidget {
               Navigator.pop(ctx);
               context.read<AppProvider>().deleteFile(file.id);
             },
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: AppColors.error),
-            ),
+            child: const Text('Delete',
+                style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -176,40 +173,42 @@ class FilesScreen extends StatelessWidget {
   }
 }
 
-// ── Empty state ───────────────────────────────────────────────────────────────
+// ── Empty state ────────────────────────────────────────────────────────────────
 class _EmptyState extends StatelessWidget {
   final bool isDark;
   const _EmptyState({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
-    final textPri = isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
-    final textSec = isDark
-        ? AppColors.textSecondary
-        : AppColors.textSecondaryLight;
+    final textPri =
+        isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
+    final textSec =
+        isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
+        padding: const EdgeInsets.symmetric(horizontal: 48),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 64,
-              height: 64,
+              width: 72,
+              height: 72,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(18),
+                color: AppColors.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                    color: AppColors.primary.withOpacity(0.15)),
               ),
-              child: const Icon(
-                Icons.folder_open_rounded,
-                color: AppColors.primary,
-                size: 30,
-              ),
-            ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
-            const SizedBox(height: 20),
+              child: const Icon(Icons.folder_open_rounded,
+                  color: AppColors.primary, size: 32),
+            ).animate().scale(
+                  duration: 500.ms,
+                  curve: Curves.elasticOut,
+                ),
+            const SizedBox(height: 24),
             Text(
-              'No files yet',
+              'Nothing here yet',
               style: TextStyle(
                 color: textPri,
                 fontSize: 20,
@@ -217,12 +216,30 @@ class _EmptyState extends StatelessWidget {
                 letterSpacing: -0.5,
               ),
             ).animate().fadeIn(delay: 150.ms),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
-              'Files you process will appear here.\nGo to Tools to get started.',
-              style: TextStyle(color: textSec, fontSize: 14, height: 1.6),
+              'Files you process with any tool will\nappear here automatically.',
+              style:
+                  TextStyle(color: textSec, fontSize: 14, height: 1.65),
               textAlign: TextAlign.center,
             ).animate().fadeIn(delay: 200.ms),
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.touch_app_rounded,
+                    color: AppColors.primary, size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  'Go to Tools to get started',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ).animate().fadeIn(delay: 250.ms),
           ],
         ),
       ),
@@ -230,14 +247,14 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ── File row ───────────────────────────────────────────────────────────────────
-class _FileRow extends StatelessWidget {
+// ── File card ──────────────────────────────────────────────────────────────────
+class _FileCard extends StatelessWidget {
   final PdfFileModel file;
   final bool isDark;
   final VoidCallback onDelete;
   final VoidCallback onOpen;
 
-  const _FileRow({
+  const _FileCard({
     required this.file,
     required this.isDark,
     required this.onDelete,
@@ -270,10 +287,14 @@ class _FileRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cardCol = isDark ? AppColors.bgCard : AppColors.bgCardLight;
-    final borderCol = isDark ? AppColors.border : AppColors.borderLightMode;
-    final textPri = isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
-    final textMut = isDark ? AppColors.textMuted : AppColors.textMutedLight;
-    final dateStr = DateFormat('MMM d  ·  h:mm a').format(file.createdAt);
+    final borderCol =
+        isDark ? AppColors.border : AppColors.borderLightMode;
+    final textPri =
+        isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
+    final textMut =
+        isDark ? AppColors.textMuted : AppColors.textMutedLight;
+    final dateStr =
+        DateFormat('MMM d  ·  h:mm a').format(file.createdAt);
 
     return Dismissible(
       key: ValueKey(file.id),
@@ -282,43 +303,47 @@ class _FileRow extends StatelessWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        margin: const EdgeInsets.only(bottom: 1),
         decoration: BoxDecoration(
           color: AppColors.error.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.error.withOpacity(0.25)),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+              color: AppColors.error.withOpacity(0.25)),
         ),
-        child: const Icon(
-          Icons.delete_outline_rounded,
-          color: AppColors.error,
-          size: 22,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.delete_outline_rounded,
+                color: AppColors.error, size: 22),
+            const SizedBox(height: 4),
+            Text('Delete',
+                style: TextStyle(
+                    color: AppColors.error,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600)),
+          ],
         ),
       ),
       child: GestureDetector(
         onTap: onOpen,
         child: Container(
-          margin: const EdgeInsets.only(bottom: 1),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: cardCol,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: borderCol),
           ),
           child: Row(
             children: [
               // Icon
               Container(
-                width: 44,
-                height: 44,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   color: _opColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(
-                  Icons.picture_as_pdf_rounded,
-                  color: _opColor,
-                  size: 22,
-                ),
+                child: Icon(Icons.picture_as_pdf_rounded,
+                    color: _opColor, size: 24),
               ),
               const SizedBox(width: 14),
 
@@ -338,18 +363,15 @@ class _FileRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
-                        // Operation pill
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 2,
-                          ),
+                              horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
                             color: _opColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(5),
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             '${file.operation.icon} ${file.operation.label}',
@@ -363,11 +385,12 @@ class _FileRow extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           '${file.formattedSize}  ·  ${file.pageCount}p',
-                          style: TextStyle(color: textMut, fontSize: 11),
+                          style:
+                              TextStyle(color: textMut, fontSize: 11),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 4),
                     Text(
                       dateStr,
                       style: TextStyle(color: textMut, fontSize: 11),
@@ -376,17 +399,10 @@ class _FileRow extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(width: 10),
-
-              // Delete
-              GestureDetector(
-                onTap: onDelete,
-                child: Icon(
-                  Icons.delete_outline_rounded,
-                  color: textMut,
-                  size: 18,
-                ),
-              ),
+              const SizedBox(width: 8),
+              // Open icon
+              Icon(Icons.open_in_new_rounded,
+                  color: textMut, size: 16),
             ],
           ),
         ),
