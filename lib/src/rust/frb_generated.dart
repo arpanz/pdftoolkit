@@ -68,7 +68,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => 2136196993;
+  int get rustContentHash => 1234567890;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -150,6 +150,21 @@ abstract class RustLibApi extends BaseApi {
   Future<PdfResult> crateApiPdfOpsUnlockPdf({
     required String inputPath,
     required String password,
+    required String outputPath,
+  });
+
+  Future<PdfResult> crateApiPdfOpsDocxToPdf({
+    required String inputPath,
+    required String outputPath,
+  });
+
+  Future<PdfResult> crateApiPdfOpsXlsxToPdf({
+    required String inputPath,
+    required String outputPath,
+  });
+
+  Future<PdfResult> crateApiPdfOpsPptxToPdf({
+    required String inputPath,
     required String outputPath,
   });
 }
@@ -659,6 +674,108 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiPdfOpsUnlockPdfConstMeta => const TaskConstMeta(
     debugName: "unlock_pdf",
     argNames: ["inputPath", "password", "outputPath"],
+  );
+
+  @override
+  Future<PdfResult> crateApiPdfOpsDocxToPdf({
+    required String inputPath,
+    required String outputPath,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(inputPath, serializer);
+          sse_encode_String(outputPath, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 15,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_pdf_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiPdfOpsDocxToPdfConstMeta,
+        argValues: [inputPath, outputPath],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPdfOpsDocxToPdfConstMeta => const TaskConstMeta(
+    debugName: "docx_to_pdf",
+    argNames: ["inputPath", "outputPath"],
+  );
+
+  @override
+  Future<PdfResult> crateApiPdfOpsXlsxToPdf({
+    required String inputPath,
+    required String outputPath,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(inputPath, serializer);
+          sse_encode_String(outputPath, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 16,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_pdf_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiPdfOpsXlsxToPdfConstMeta,
+        argValues: [inputPath, outputPath],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPdfOpsXlsxToPdfConstMeta => const TaskConstMeta(
+    debugName: "xlsx_to_pdf",
+    argNames: ["inputPath", "outputPath"],
+  );
+
+  @override
+  Future<PdfResult> crateApiPdfOpsPptxToPdf({
+    required String inputPath,
+    required String outputPath,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(inputPath, serializer);
+          sse_encode_String(outputPath, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 17,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_pdf_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiPdfOpsPptxToPdfConstMeta,
+        argValues: [inputPath, outputPath],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPdfOpsPptxToPdfConstMeta => const TaskConstMeta(
+    debugName: "pptx_to_pdf",
+    argNames: ["inputPath", "outputPath"],
   );
 
   @protected

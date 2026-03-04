@@ -1331,3 +1331,1155 @@ fn add_watermark_to_page(doc: &mut Document, page_id: ObjectId) -> Result<()> {
 
     Ok(())
 }
+
+// ─── Shared office-format helpers ────────────────────────────────────────────
+
+/// Push current page content, reset y to top.
+fn office_next_page(pages: &mut Vec<String>, cur: &mut String, y: &mut f64) {
+    pages.push(std::mem::take(cur));
+    *y = 842.0 - 60.0;
+}
+
+/// Escape a string for use inside a PDF literal string `( ... )`.
+fn pdf_escape_latin(s: &str) -> String {
+    s.chars()
+        .map(|c| {
+            let cp = c as u32;
+            if cp > 0xff { '?' } else { c }
+        })
+        .filter(|c| *c != '\x00')
+        .map(|c| match c {
+            '(' => "\\(".to_string(),
+            ')' => "\\)".to_string(),
+            '\\' => "\\\\".to_string(),
+            other => other.to_string(),
+        })
+        .collect()
+}
+
+/// Build a minimal 2-font lopdf Document from a list of per-page content streams.
+fn build_office_pdf(
+    pages_content: Vec<String>,
+    page_w: i64,
+    page_h: i64,
+    extra_resources: Option<lopdf::Dictionary>, // merged into every page's Resources
+) -> Result<Document> {
+    let mut doc = Document::with_version("1.5");
+    let mut nid: u32 = 1;
+
+    let catalog_id: ObjectId = (nid, 0); nid += 1;
+    let pages_id:   ObjectId = (nid, 0); nid += 1;
+    let font_id:    ObjectId = (nid, 0); nid += 1;
+    let font_bold_id: ObjectId = (nid, 0); nid += 1;
+
+    let mut fd = lopdf::Dictionary::new();
+    fd.set("Type",     Object::Name(b"Font".to_vec()));
+    fd.set("Subtype",  Object::Name(b"Type1".to_vec()));
+    fd.set("BaseFont", Object::Name(b"Helvetica".to_vec()));
+    fd.set("Encoding", Object::Name(b"WinAnsiEncoding".to_vec()));
+    doc.objects.insert(font_id, Object::Dictionary(fd));
+
+    let mut fdb = lopdf::Dictionary::new();
+    fdb.set("Type",     Object::Name(b"Font".to_vec()));
+    fdb.set("Subtype",  Object::Name(b"Type1".to_vec()));
+    fdb.set("BaseFont", Object::Name(b"Helvetica-Bold".to_vec()));
+    fdb.set("Encoding", Object::Name(b"WinAnsiEncoding".to_vec()));
+    doc.objects.insert(font_bold_id, Object::Dictionary(fdb));
+
+    let mut page_ids: Vec<Object> = Vec::new();
+
+    for content_str in pages_content {
+        let content_bytes = content_str.into_bytes();
+        let content_id: ObjectId = (nid, 0); nid += 1;
+        let mut cd = lopdf::Dictionary::new();
+        cd.set("Length", Object::Integer(content_bytes.len() as i64));
+        doc.objects.insert(content_id, Object::Stream(lopdf::Stream::new(cd, content_bytes)));
+
+        let res_id: ObjectId = (nid, 0); nid += 1;
+        let mut fonts_d = lopdf::Dictionary::new();
+        fonts_d.set("F1", Object::Reference(font_id));
+        fonts_d.set("F2", Object::Reference(font_bold_id));
+        let mut res_d = lopdf::Dictionary::new();
+        res_d.set("Font", Object::Dictionary(fonts_d));
+        if let Some(ref extra) = extra_resources {
+            for (k, v) in extra.iter() {
+                res_d.set(k.clone(), v.clone());
+            }
+        }
+        doc.objects.insert(res_id, Object::Dictionary(res_d));
+
+        let page_id: ObjectId = (nid, 0); nid += 1;
+        let mut pd = lopdf::Dictionary::new();
+        pd.set("Type",   Object::Name(b"Page".to_vec()));
+        pd.set("Parent", Object::Reference(pages_id));
+        pd.set("MediaBox", Object::Array(vec![
+            Object::Integer(0), Object::Integer(0),
+            Object::Integer(page_w), Object::Integer(page_h),
+        ]));
+        pd.set("Resources", Object::Reference(res_id));
+        pd.set("Contents",  Object::Reference(content_id));
+        doc.objects.insert(page_id, Object::Dictionary(pd));
+        page_ids.push(Object::Reference(page_id));
+    }
+
+    let count = page_ids.len() as i64;
+    let mut pages_dict = lopdf::Dictionary::new();
+    pages_dict.set("Type",  Object::Name(b"Pages".to_vec()));
+    pages_dict.set("Kids",  Object::Array(page_ids));
+    pages_dict.set("Count", Object::Integer(count));
+    doc.objects.insert(pages_id, Object::Dictionary(pages_dict));
+
+    let mut catalog = lopdf::Dictionary::new();
+    catalog.set("Type",  Object::Name(b"Catalog".to_vec()));
+    catalog.set("Pages", Object::Reference(pages_id));
+    doc.objects.insert(catalog_id, Object::Dictionary(catalog));
+
+    doc.trailer.set("Root", Object::Reference(catalog_id));
+    doc.trailer.set("Size", Object::Integer((nid + 1) as i64));
+    Ok(doc)
+}
+
+// ─── DOCX → PDF ──────────────────────────────────────────────────────────────
+
+#[frb]
+pub fn docx_to_pdf(input_path: String, output_path: String) -> PdfResult {
+    let start = Instant::now();
+    match docx_to_pdf_inner(&input_path, &output_path) {
+        Ok(pages) => ok(output_path, pages, start),
+        Err(e)    => err(e.to_string()),
+    }
+}
+
+fn docx_to_pdf_inner(input_path: &str, output_path: &str) -> Result<u32> {
+    use quick_xml::events::Event;
+    use quick_xml::Reader;
+    use std::io::Read;
+
+    // ── Read document.xml from the zip ───────────────────────────────────
+    let file = fs::File::open(input_path)?;
+    let mut archive = zip::ZipArchive::new(file)?;
+    let xml = {
+        let mut entry = archive
+            .by_name("word/document.xml")
+            .map_err(|_| anyhow!("word/document.xml not found in DOCX"))?;
+        let mut s = String::new();
+        entry.read_to_string(&mut s)?;
+        s
+    };
+
+    // ── Parse OOXML into block list ───────────────────────────────────────
+    #[derive(Clone)] struct DocRun  { text: String, bold: bool }
+    #[derive(Clone)] struct DocPara { runs: Vec<DocRun>, heading: u8 }
+    #[derive(Clone)] struct DocRow  { cells: Vec<String> }
+    enum DocBlock { Para(DocPara), Table(Vec<DocRow>) }
+
+    let mut blocks: Vec<DocBlock> = Vec::new();
+    let (mut in_body, mut in_tbl, mut in_tr, mut in_tc) = (false, false, false, false);
+    let (mut in_p, mut in_r, mut in_ppr, mut in_rpr, mut in_t) = (false,false,false,false,false);
+    let (mut cur_heading, mut cur_bold) = (0u8, false);
+    let mut cur_run  = String::new();
+    let mut cur_runs: Vec<DocRun> = Vec::new();
+    let mut cur_cell = String::new();
+    let mut cur_row:   Vec<String>  = Vec::new();
+    let mut cur_table: Vec<DocRow>  = Vec::new();
+
+    let mut reader = Reader::from_str(&xml);
+    let mut buf = Vec::new();
+
+    loop {
+        let event = reader.read_event_into(&mut buf).unwrap_or(Event::Eof);
+        match event {
+            Event::Eof => break,
+            Event::Start(ref e) | Event::Empty(ref e) => {
+                let loc = e.name().local_name();
+                let loc = loc.as_ref();
+                match loc {
+                    b"body"   => in_body = true,
+                    b"tbl"    if in_body && !in_tbl => { in_tbl = true; cur_table.clear(); }
+                    b"tr"     if in_tbl  => { in_tr = true; cur_row.clear(); }
+                    b"tc"     if in_tr   => { in_tc = true; cur_cell.clear(); }
+                    b"p"      if in_body => {
+                        in_p = true; cur_runs.clear(); cur_heading = 0;
+                    }
+                    b"pPr"    if in_p    => in_ppr = true,
+                    b"pStyle" if in_ppr  => {
+                        if let Some(v) = e.attributes().filter_map(|a| a.ok())
+                            .find(|a| a.key.local_name().as_ref() == b"val")
+                            .map(|a| String::from_utf8_lossy(&a.value).to_lowercase())
+                        {
+                            if v.starts_with("heading") {
+                                cur_heading = v.trim_start_matches("heading")
+                                    .trim().parse::<u8>().unwrap_or(1).min(6);
+                            }
+                        }
+                    }
+                    b"r"   if in_p   => { in_r = true; cur_run.clear(); cur_bold = cur_heading > 0; }
+                    b"rPr" if in_r   => in_rpr = true,
+                    b"b"   if in_rpr => cur_bold = true,
+                    b"t"   if in_r   => in_t = true,
+                    b"br"  if in_r   => cur_run.push('\n'),
+                    _ => {}
+                }
+            }
+            Event::End(ref e) => {
+                let loc = e.name().local_name();
+                let loc = loc.as_ref();
+                match loc {
+                    b"body" => in_body = false,
+                    b"tbl"  => {
+                        blocks.push(DocBlock::Table(std::mem::take(&mut cur_table)));
+                        in_tbl = false;
+                    }
+                    b"tr"   => {
+                        cur_table.push(DocRow { cells: std::mem::take(&mut cur_row) });
+                        in_tr = false;
+                    }
+                    b"tc"   => {
+                        cur_row.push(std::mem::take(&mut cur_cell));
+                        in_tc = false;
+                    }
+                    b"p"    => {
+                        let runs = std::mem::take(&mut cur_runs);
+                        if in_tc {
+                            let t: String = runs.iter().map(|r| r.text.as_str()).collect::<Vec<_>>().join(" ");
+                            if !cur_cell.is_empty() { cur_cell.push(' '); }
+                            cur_cell.push_str(t.trim());
+                        } else if in_body {
+                            blocks.push(DocBlock::Para(DocPara { runs, heading: cur_heading }));
+                        }
+                        in_p = false; in_ppr = false;
+                    }
+                    b"pPr" => in_ppr = false,
+                    b"r"   => {
+                        let t = std::mem::take(&mut cur_run);
+                        cur_runs.push(DocRun { text: t, bold: cur_bold });
+                        in_r = false; in_rpr = false;
+                    }
+                    b"rPr" => in_rpr = false,
+                    b"t"   => in_t = false,
+                    _ => {}
+                }
+            }
+            Event::Text(ref e) => {
+                if in_t && in_r {
+                    cur_run.push_str(&e.unescape().unwrap_or_default());
+                }
+            }
+            _ => {}
+        }
+        buf.clear();
+    }
+
+    // ── Lay out blocks onto pages ─────────────────────────────────────────
+    const PW: f64 = 595.0;
+    const PH: f64 = 842.0;
+    const M:  f64 = 60.0;
+    const UW: f64 = PW - 2.0 * M;
+    const HEADING_FS: [f64; 6] = [22.0, 18.0, 15.0, 13.0, 12.0, 11.5];
+    const NORMAL_FS:  f64 = 11.0;
+    const CELL_FS:    f64 = 9.0;
+    const CELL_PAD:   f64 = 3.5;
+
+    let mut pages: Vec<String> = Vec::new();
+    let mut cur   = String::new();
+    let mut y     = PH - M;
+
+    for block in &blocks {
+        match block {
+            DocBlock::Para(para) => {
+                let (fs, hbold) = if para.heading > 0 {
+                    (HEADING_FS[(para.heading as usize).saturating_sub(1).min(5)], true)
+                } else {
+                    (NORMAL_FS, false)
+                };
+                let lh = fs * 1.4;
+                let is_bold = hbold
+                    || para.runs.first().map(|r| r.bold).unwrap_or(false);
+                let font = if is_bold { "F2" } else { "F1" };
+                let full: String = para.runs.iter().map(|r| r.text.as_str()).collect::<Vec<_>>().join(" ");
+                if full.trim().is_empty() {
+                    y -= lh * 0.4;
+                    continue;
+                }
+                let cpl = ((UW / (fs * 0.55)) as usize).max(10);
+                let mut line_buf = String::new();
+                for word in full.split_whitespace() {
+                    if line_buf.is_empty() {
+                        line_buf.push_str(word);
+                    } else if line_buf.len() + 1 + word.len() <= cpl {
+                        line_buf.push(' ');
+                        line_buf.push_str(word);
+                    } else {
+                        if y - lh < M { office_next_page(&mut pages, &mut cur, &mut y); }
+                        y -= lh;
+                        cur.push_str(&format!("BT\n/{} {:.1} Tf\n{:.2} {:.2} Td\n({}) Tj\nET\n",
+                            font, fs, M, y, pdf_escape_latin(&line_buf)));
+                        line_buf.clear();
+                        line_buf.push_str(word);
+                    }
+                }
+                if !line_buf.is_empty() {
+                    if y - lh < M { office_next_page(&mut pages, &mut cur, &mut y); }
+                    y -= lh;
+                    cur.push_str(&format!("BT\n/{} {:.1} Tf\n{:.2} {:.2} Td\n({}) Tj\nET\n",
+                        font, fs, M, y, pdf_escape_latin(&line_buf)));
+                }
+                y -= 3.0; // paragraph spacing
+            }
+
+            DocBlock::Table(rows) => {
+                if rows.is_empty() { continue; }
+                let ncols = rows.iter().map(|r| r.cells.len()).max().unwrap_or(0);
+                if ncols == 0 { continue; }
+                let col_w = UW / ncols as f64;
+                let cell_lh = CELL_FS * 1.4;
+                let row_h = cell_lh + 2.0 * CELL_PAD;
+
+                // Draw each row
+                for row in rows {
+                    if y - row_h < M { office_next_page(&mut pages, &mut cur, &mut y); }
+                    let row_top = y;
+                    // Grid rect for this row
+                    cur.push_str(&format!("q\n0.5 w\n0 0 0 RG\n{:.2} {:.2} {:.2} {:.2} re S\nQ\n",
+                        M, row_top - row_h, UW, row_h));
+                    // Vertical dividers
+                    cur.push_str("q\n0.5 w\n0 0 0 RG\n");
+                    for ci in 1..ncols {
+                        let cx = M + ci as f64 * col_w;
+                        cur.push_str(&format!("{:.2} {:.2} m\n{:.2} {:.2} l\nS\n",
+                            cx, row_top, cx, row_top - row_h));
+                    }
+                    cur.push_str("Q\n");
+                    // Cell text
+                    let text_y = row_top - CELL_PAD - cell_lh;
+                    for (ci, cell) in row.cells.iter().enumerate() {
+                        if ci >= ncols { break; }
+                        let available_chars = ((col_w - 2.0 * CELL_PAD) / (CELL_FS * 0.55)) as usize;
+                        let display = if cell.len() > available_chars && available_chars > 3 {
+                            format!("{}…", &cell[..available_chars.saturating_sub(1)])
+                        } else {
+                            cell.clone()
+                        };
+                        let cx = M + ci as f64 * col_w + CELL_PAD;
+                        cur.push_str(&format!("BT\n/F1 {:.1} Tf\n{:.2} {:.2} Td\n({}) Tj\nET\n",
+                            CELL_FS, cx, text_y, pdf_escape_latin(&display)));
+                    }
+                    y -= row_h;
+                }
+                y -= 6.0;
+            }
+        }
+    }
+
+    if !cur.is_empty() { pages.push(cur); }
+    if pages.is_empty() { pages.push(String::new()); }
+
+    let count = pages.len() as u32;
+    let mut doc = build_office_pdf(pages, 595, 842, None)?;
+    if let Some(parent) = Path::new(output_path).parent() {
+        fs::create_dir_all(parent)?;
+    }
+    save_document(&mut doc, output_path)?;
+    Ok(count)
+}
+
+// ─── XLSX → PDF ──────────────────────────────────────────────────────────────
+
+#[frb]
+pub fn xlsx_to_pdf(input_path: String, output_path: String) -> PdfResult {
+    let start = Instant::now();
+    match xlsx_to_pdf_inner(&input_path, &output_path) {
+        Ok(pages) => ok(output_path, pages, start),
+        Err(e)    => err(e.to_string()),
+    }
+}
+
+fn xlsx_to_pdf_inner(input_path: &str, output_path: &str) -> Result<u32> {
+    use quick_xml::events::Event;
+    use quick_xml::Reader;
+    use std::io::Read;
+
+    let file = fs::File::open(input_path)?;
+    let mut archive = zip::ZipArchive::new(file)?;
+
+    // ── Shared strings ────────────────────────────────────────────────────
+    let shared_strings: Vec<String> = {
+        let mut ss: Vec<String> = Vec::new();
+        if let Ok(mut entry) = archive.by_name("xl/sharedStrings.xml") {
+            let mut xml = String::new();
+            entry.read_to_string(&mut xml)?;
+            let mut reader = Reader::from_str(&xml);
+            let mut buf = Vec::new();
+            let mut in_t = false;
+            let mut cur  = String::new();
+            loop {
+                let ev = reader.read_event_into(&mut buf).unwrap_or(Event::Eof);
+                match ev {
+                    Event::Eof => break,
+                    Event::Start(ref e) | Event::Empty(ref e)
+                        if e.name().local_name().as_ref() == b"t" => { in_t = true; cur.clear(); }
+                    Event::End(ref e)
+                        if e.name().local_name().as_ref() == b"t" => {
+                            ss.push(std::mem::take(&mut cur));
+                            in_t = false;
+                        }
+                    Event::Text(ref e) if in_t => {
+                        cur.push_str(&e.unescape().unwrap_or_default());
+                    }
+                    _ => {}
+                }
+                buf.clear();
+            }
+        }
+        ss
+    };
+
+    // ── Sheet names (list sheets to find active ones) ─────────────────────
+    // We'll read all sheet*.xml files found in xl/worksheets/
+    let sheet_names: Vec<String> = {
+        let mut names: Vec<String> = Vec::new();
+        for i in 0..archive.len() {
+            if let Ok(f) = archive.by_index(i) {
+                let n = f.name().to_string();
+                if n.starts_with("xl/worksheets/sheet") && n.ends_with(".xml") {
+                    names.push(n);
+                }
+            }
+        }
+        names.sort();
+        names
+    };
+
+    if sheet_names.is_empty() {
+        return Err(anyhow!("No worksheets found in XLSX"));
+    }
+
+    // ── Parse all sheets into rows ────────────────────────────────────────
+    // col_ref like "A1" → col index (0-based)
+    fn col_index(cell_ref: &str) -> usize {
+        let mut idx = 0usize;
+        for c in cell_ref.chars() {
+            if c.is_ascii_alphabetic() {
+                idx = idx * 26 + (c.to_ascii_uppercase() as usize - 'A' as usize + 1);
+            } else { break; }
+        }
+        idx.saturating_sub(1)
+    }
+
+    // Each sheet → rows of cells (Vec<Vec<String>>)
+    let mut all_sheets: Vec<(String, Vec<Vec<String>>)> = Vec::new();
+
+    for sheet_path in &sheet_names {
+        let xml = {
+            let mut entry = archive.by_name(sheet_path)?;
+            let mut s = String::new();
+            entry.read_to_string(&mut s)?;
+            s
+        };
+        let sheet_label = sheet_path
+            .trim_start_matches("xl/worksheets/")
+            .trim_end_matches(".xml")
+            .to_string();
+
+        let mut rows: Vec<Vec<String>> = Vec::new();
+        let mut cur_row_idx = 0usize;
+        let mut cur_row: Vec<(usize, String)> = Vec::new(); // (col_idx, value)
+        let mut in_row   = false;
+        let mut in_cell  = false;
+        let mut in_v     = false;
+        let mut cell_type = String::new();
+        let mut cell_ref  = String::new();
+        let mut cell_val  = String::new();
+
+        let mut reader = Reader::from_str(&xml);
+        let mut buf = Vec::new();
+        loop {
+            let ev = reader.read_event_into(&mut buf).unwrap_or(Event::Eof);
+            match ev {
+                Event::Eof => break,
+                Event::Start(ref e) | Event::Empty(ref e) => {
+                    let loc = e.name().local_name();
+                    let loc = loc.as_ref();
+                    match loc {
+                        b"row" => {
+                            in_row = true;
+                            cur_row.clear();
+                            cur_row_idx = e.attributes().filter_map(|a| a.ok())
+                                .find(|a| a.key.local_name().as_ref() == b"r")
+                                .and_then(|a| String::from_utf8_lossy(&a.value).parse::<usize>().ok())
+                                .unwrap_or(rows.len() + 1)
+                                .saturating_sub(1);
+                        }
+                        b"c" if in_row => {
+                            in_cell = true;
+                            cell_val.clear();
+                            cell_type = e.attributes().filter_map(|a| a.ok())
+                                .find(|a| a.key.local_name().as_ref() == b"t")
+                                .map(|a| String::from_utf8_lossy(&a.value).to_string())
+                                .unwrap_or_default();
+                            cell_ref = e.attributes().filter_map(|a| a.ok())
+                                .find(|a| a.key.local_name().as_ref() == b"r")
+                                .map(|a| String::from_utf8_lossy(&a.value).to_string())
+                                .unwrap_or_default();
+                        }
+                        b"v" | b"t" if in_cell => { in_v = true; cell_val.clear(); }
+                        _ => {}
+                    }
+                }
+                Event::End(ref e) => {
+                    let loc = e.name().local_name();
+                    let loc = loc.as_ref();
+                    match loc {
+                        b"row" => {
+                            // Expand sparse row to dense
+                            let max_col = cur_row.iter().map(|(ci, _)| *ci).max().unwrap_or(0);
+                            let mut dense: Vec<String> = vec![String::new(); max_col + 1];
+                            for (ci, val) in std::mem::take(&mut cur_row) {
+                                if ci < dense.len() { dense[ci] = val; }
+                            }
+                            // Ensure rows vector is large enough
+                            while rows.len() <= cur_row_idx { rows.push(Vec::new()); }
+                            rows[cur_row_idx] = dense;
+                            in_row = false;
+                        }
+                        b"c" if in_cell => {
+                            let value = if cell_type == "s" {
+                                let idx = cell_val.trim().parse::<usize>().unwrap_or(usize::MAX);
+                                if idx < shared_strings.len() { shared_strings[idx].clone() } else { String::new() }
+                            } else if cell_type == "b" {
+                                if cell_val.trim() == "1" { "TRUE".to_string() } else { "FALSE".to_string() }
+                            } else {
+                                cell_val.trim().to_string()
+                            };
+                            let ci = col_index(&cell_ref);
+                            cur_row.push((ci, value));
+                            in_cell = false;
+                            in_v = false;
+                        }
+                        b"v" | b"t" => in_v = false,
+                        _ => {}
+                    }
+                }
+                Event::Text(ref e) if in_v => {
+                    cell_val.push_str(&e.unescape().unwrap_or_default());
+                }
+                _ => {}
+            }
+            buf.clear();
+        }
+        // Trim trailing empty rows
+        while rows.last().map(|r: &Vec<String>| r.iter().all(|c| c.is_empty())).unwrap_or(false) {
+            rows.pop();
+        }
+        if !rows.is_empty() {
+            all_sheets.push((sheet_label, rows));
+        }
+    }
+
+    if all_sheets.is_empty() {
+        return Err(anyhow!("XLSX had no readable data."));
+    }
+
+    // ── Render sheets to PDF pages ────────────────────────────────────────
+    const PW: f64 = 842.0; // landscape A4
+    const PH: f64 = 595.0;
+    const M:  f64 = 40.0;
+    const UW: f64 = PW - 2.0 * M;
+    const HEADER_FS: f64 = 13.0;
+    const CELL_FS:   f64 = 8.5;
+    const CELL_PAD:  f64 = 3.0;
+    const ROW_H:     f64 = CELL_FS * 1.4 + 2.0 * CELL_PAD;
+
+    let mut pages: Vec<String> = Vec::new();
+    let mut cur   = String::new();
+    let mut y     = PH - M;
+
+    for (sheet_name, rows) in &all_sheets {
+        // Sheet header
+        if y < PH - M + 1.0 && y < M + HEADER_FS * 2.0 + ROW_H {
+            office_next_page(&mut pages, &mut cur, &mut y);
+        }
+        y -= HEADER_FS * 1.4;
+        cur.push_str(&format!("BT\n/F2 {:.1} Tf\n{:.2} {:.2} Td\n({}) Tj\nET\n",
+            HEADER_FS, M, y, pdf_escape_latin(sheet_name)));
+        y -= 6.0;
+
+        if rows.is_empty() { continue; }
+        let ncols = rows.iter().map(|r| r.len()).max().unwrap_or(0);
+        if ncols == 0 { continue; }
+
+        // Auto-size columns: max content length, capped
+        let mut col_max_len: Vec<usize> = vec![3; ncols];
+        for row in rows {
+            for (ci, cell) in row.iter().enumerate() {
+                if ci < ncols {
+                    col_max_len[ci] = col_max_len[ci].max(cell.len().min(30));
+                }
+            }
+        }
+        let total_chars: usize = col_max_len.iter().sum::<usize>().max(1);
+        let col_widths: Vec<f64> = col_max_len.iter()
+            .map(|&l| (l as f64 / total_chars as f64 * UW).max(20.0))
+            .collect();
+        // Normalize so sum == UW
+        let w_sum: f64 = col_widths.iter().sum();
+        let col_widths: Vec<f64> = col_widths.iter().map(|&w| w * UW / w_sum).collect();
+
+        for (ri, row) in rows.iter().enumerate() {
+            if y - ROW_H < M {
+                office_next_page(&mut pages, &mut cur, &mut y);
+            }
+            let row_top = y;
+            let text_y  = row_top - CELL_PAD - CELL_FS * 1.2;
+            let font    = if ri == 0 { "F2" } else { "F1" };
+
+            // Row rect
+            cur.push_str(&format!("q\n0.5 w\n0 0 0 RG\n{:.2} {:.2} {:.2} {:.2} re S\nQ\n",
+                M, row_top - ROW_H, UW, ROW_H));
+
+            // Vertical dividers
+            cur.push_str("q\n0.5 w\n0 0 0 RG\n");
+            let mut cx = M;
+            for ci in 0..ncols.saturating_sub(1) {
+                cx += col_widths[ci];
+                cur.push_str(&format!("{:.2} {:.2} m\n{:.2} {:.2} l\nS\n",
+                    cx, row_top, cx, row_top - ROW_H));
+            }
+            cur.push_str("Q\n");
+
+            // Cell text
+            let mut cx = M;
+            for ci in 0..ncols {
+                let cell = row.get(ci).map(|s| s.as_str()).unwrap_or("");
+                if !cell.is_empty() {
+                    let avail = ((col_widths[ci] - 2.0 * CELL_PAD) / (CELL_FS * 0.55)) as usize;
+                    let display = if cell.len() > avail && avail > 3 {
+                        format!("{}…", &cell[..avail.saturating_sub(1)])
+                    } else {
+                        cell.to_string()
+                    };
+                    cur.push_str(&format!("BT\n/{} {:.1} Tf\n{:.2} {:.2} Td\n({}) Tj\nET\n",
+                        font, CELL_FS, cx + CELL_PAD, text_y, pdf_escape_latin(&display)));
+                }
+                cx += col_widths[ci];
+            }
+            y -= ROW_H;
+        }
+        y -= 12.0; // spacing between sheets
+    }
+
+    if !cur.is_empty() { pages.push(cur); }
+    if pages.is_empty() { pages.push(String::new()); }
+
+    let count = pages.len() as u32;
+    // landscape A4: pass 842×595
+    let mut doc = build_office_pdf(pages, 842, 595, None)?;
+    if let Some(parent) = Path::new(output_path).parent() {
+        fs::create_dir_all(parent)?;
+    }
+    save_document(&mut doc, output_path)?;
+    Ok(count)
+}
+
+// ─── PPTX → PDF ──────────────────────────────────────────────────────────────
+
+#[frb]
+pub fn pptx_to_pdf(input_path: String, output_path: String) -> PdfResult {
+    let start = Instant::now();
+    match pptx_to_pdf_inner(&input_path, &output_path) {
+        Ok(pages) => ok(output_path, pages, start),
+        Err(e)    => err(e.to_string()),
+    }
+}
+
+fn pptx_to_pdf_inner(input_path: &str, output_path: &str) -> Result<u32> {
+    use quick_xml::events::Event;
+    use quick_xml::Reader;
+    use std::io::Read;
+    use image::GenericImageView;
+
+    // Landscape A4
+    const PW: f64 = 842.0;
+    const PH: f64 = 595.0;
+
+    // Standard PPTX slide in EMU → points (1 pt = 12700 EMU)
+    const SLIDE_W_PT: f64 = 720.0; // 9144000 / 12700
+    const SLIDE_H_PT: f64 = 540.0; // 6858000 / 12700
+
+    // Scale to fit landscape A4, keep aspect ratio
+    let scale = (PW / SLIDE_W_PT).min(PH / SLIDE_H_PT);
+    let rendered_w = SLIDE_W_PT * scale;
+    let rendered_h = SLIDE_H_PT * scale;
+    let x_off = (PW - rendered_w) / 2.0;
+    let y_off  = (PH - rendered_h) / 2.0;
+
+    let emu_to_pt = |v: i64| v as f64 / 12700.0;
+
+    // PPTX y is from top; PDF y is from bottom
+    let pptx_y_to_pdf = |pptx_y_pt: f64| -> f64 {
+        y_off + rendered_h - pptx_y_pt * scale
+    };
+    // x stays same direction
+    let pptx_x_to_pdf = |pptx_x_pt: f64| -> f64 {
+        x_off + pptx_x_pt * scale
+    };
+
+    // ── Collect slide file names & rels ──────────────────────────────────
+    let file = fs::File::open(input_path)?;
+    let mut archive = zip::ZipArchive::new(file)?;
+
+    let mut slide_paths: Vec<String> = (0..archive.len())
+        .filter_map(|i| archive.by_index(i).ok().map(|f| f.name().to_string()))
+        .filter(|n| {
+            let re = regex_slide_name(n);
+            re
+        })
+        .collect();
+    slide_paths.sort_by_key(|s| slide_number_from_path(s));
+
+    if slide_paths.is_empty() {
+        return Err(anyhow!("No slides found in PPTX"));
+    }
+
+    // ── Parse each slide ─────────────────────────────────────────────────
+    struct PptxShape {
+        x: f64, y: f64, cx: f64, cy: f64,
+        text_runs: Vec<(String, f64, bool)>, // (text, font_pt, bold)
+        img_r_id: Option<String>,
+    }
+
+    struct PptxSlide {
+        shapes: Vec<PptxShape>,
+    }
+
+    // Parse rels for a slide → rId → media path
+    fn read_slide_rels(archive: &mut zip::ZipArchive<fs::File>, slide_path: &str)
+        -> HashMap<String, String>
+    {
+        let mut map = HashMap::new();
+        // rels file is at ppt/slides/_rels/<filename>.rels
+        let parts: Vec<&str> = slide_path.rsplitn(2, '/').collect();
+        if parts.len() < 2 { return map; }
+        let rels_path = format!("{}/_rels/{}.rels", parts[1], parts[0]);
+        if let Ok(mut entry) = archive.by_name(&rels_path) {
+            let mut xml = String::new();
+            if entry.read_to_string(&mut xml).is_ok() {
+                let mut reader = Reader::from_str(Box::leak(xml.into_boxed_str()) as &str);
+                let mut buf = Vec::new();
+                loop {
+                    match reader.read_event_into(&mut buf).unwrap_or(Event::Eof) {
+                        Event::Eof => break,
+                        Event::Start(ref e) | Event::Empty(ref e)
+                            if e.name().local_name().as_ref() == b"Relationship" =>
+                        {
+                            let mut rid    = String::new();
+                            let mut target = String::new();
+                            let mut rtype  = String::new();
+                            for attr in e.attributes().filter_map(|a| a.ok()) {
+                                let k = attr.key.local_name();
+                                match k.as_ref() {
+                                    b"Id"     => rid    = String::from_utf8_lossy(&attr.value).to_string(),
+                                    b"Target" => target = String::from_utf8_lossy(&attr.value).to_string(),
+                                    b"Type"   => rtype  = String::from_utf8_lossy(&attr.value).to_string(),
+                                    _ => {}
+                                }
+                            }
+                            if rtype.ends_with("/image") && !rid.is_empty() {
+                                // Resolve relative target
+                                let resolved = if target.starts_with("../") {
+                                    format!("ppt/{}", target.trim_start_matches("../"))
+                                } else if target.starts_with('/') {
+                                    target.trim_start_matches('/').to_string()
+                                } else {
+                                    format!("ppt/slides/{}", target)
+                                };
+                                map.insert(rid, resolved);
+                            }
+                        }
+                        _ => {}
+                    }
+                    buf.clear();
+                }
+            }
+        }
+        map
+    }
+
+    let mut all_slides: Vec<(PptxSlide, HashMap<String,String>)> = Vec::new();
+
+    for sp in &slide_paths {
+        let xml = {
+            let mut entry = archive.by_name(sp)?;
+            let mut s = String::new();
+            entry.read_to_string(&mut s)?;
+            s
+        };
+        let rels = read_slide_rels(&mut archive, sp);
+
+        let mut shapes: Vec<PptxShape> = Vec::new();
+        let mut in_sp      = false;
+        let mut in_sppr    = false;
+        let mut in_xfrm    = false;
+        let mut in_txbody  = false;
+        let mut in_para    = false;
+        let mut in_run     = false;
+        let mut in_rpr     = false;
+        let mut in_t       = false;
+        let mut in_blipfill = false;
+
+        let mut cur_x   = 0i64;
+        let mut cur_y   = 0i64;
+        let mut cur_cx  = 0i64;
+        let mut cur_cy  = 0i64;
+        let mut cur_fs  = 1800i64; // half-points in PPTX (1800 = 18pt)
+        let mut cur_bold = false;
+        let mut cur_run_text = String::new();
+        let mut cur_para_runs: Vec<(String, f64, bool)> = Vec::new();
+        let mut cur_shape_runs: Vec<(String, f64, bool)> = Vec::new();
+        let mut cur_img_rid: Option<String> = None;
+
+        let mut reader2 = Reader::from_str(&xml);
+        let mut buf = Vec::new();
+
+        loop {
+            let ev = reader2.read_event_into(&mut buf).unwrap_or(Event::Eof);
+            match ev {
+                Event::Eof => break,
+                Event::Start(ref e) | Event::Empty(ref e) => {
+                    let loc = e.name().local_name();
+                    let loc = loc.as_ref();
+                    match loc {
+                        b"sp" | b"pic" => {
+                            in_sp = true;
+                            cur_x = 0; cur_y = 0; cur_cx = 0; cur_cy = 0;
+                            cur_shape_runs.clear();
+                            cur_img_rid = None;
+                        }
+                        b"spPr" | b"nvSpPr" if in_sp => in_sppr = true,
+                        b"xfrm"  if in_sp  => in_xfrm = true,
+                        b"off"   if in_xfrm => {
+                            cur_x = attr_i64(e, b"x");
+                            cur_y = attr_i64(e, b"y");
+                        }
+                        b"ext"   if in_xfrm => {
+                            cur_cx = attr_i64(e, b"cx");
+                            cur_cy = attr_i64(e, b"cy");
+                        }
+                        b"txBody" if in_sp => in_txbody = true,
+                        b"p"      if in_txbody => {
+                            in_para = true;
+                            cur_para_runs.clear();
+                        }
+                        b"r"   if in_para => {
+                            in_run = true;
+                            cur_run_text.clear();
+                            cur_bold = false;
+                            cur_fs = 1800;
+                        }
+                        b"rPr" if in_run  => {
+                            in_rpr = true;
+                            cur_bold = e.attributes().filter_map(|a| a.ok())
+                                .find(|a| a.key.local_name().as_ref() == b"b")
+                                .map(|a| a.value.as_ref() != b"0")
+                                .unwrap_or(false);
+                            cur_fs = attr_i64(e, b"sz").max(600); // fallback 600 = 6pt
+                        }
+                        b"t" if in_run  => { in_t = true; cur_run_text.clear(); }
+                        b"br" if in_para => {
+                            cur_para_runs.push(("\n".to_string(), cur_fs as f64 / 100.0, false));
+                        }
+                        b"blipFill" if in_sp => in_blipfill = true,
+                        b"blip" if in_blipfill => {
+                            // r:embed attribute
+                            if let Some(rid) = e.attributes().filter_map(|a| a.ok())
+                                .find(|a| a.key.local_name().as_ref() == b"embed")
+                                .map(|a| String::from_utf8_lossy(&a.value).to_string())
+                            {
+                                cur_img_rid = Some(rid);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                Event::End(ref e) => {
+                    let loc = e.name().local_name();
+                    let loc = loc.as_ref();
+                    match loc {
+                        b"sp" | b"pic" if in_sp => {
+                            shapes.push(PptxShape {
+                                x:  emu_to_pt(cur_x),
+                                y:  emu_to_pt(cur_y),
+                                cx: emu_to_pt(cur_cx),
+                                cy: emu_to_pt(cur_cy),
+                                text_runs: std::mem::take(&mut cur_shape_runs),
+                                img_r_id: cur_img_rid.take(),
+                            });
+                            in_sp = false; in_sppr = false; in_xfrm = false;
+                            in_txbody = false; in_blipfill = false;
+                        }
+                        b"spPr" | b"nvSpPr" => in_sppr = false,
+                        b"xfrm"  => in_xfrm = false,
+                        b"txBody"=> in_txbody = false,
+                        b"p" if in_para => {
+                            cur_shape_runs.extend(std::mem::take(&mut cur_para_runs));
+                            // Paragraph break between shapes' paragraphs
+                            if !cur_shape_runs.is_empty() {
+                                cur_shape_runs.push(("\n".to_string(), 0.0, false));
+                            }
+                            in_para = false;
+                        }
+                        b"r" if in_run => {
+                            let t = std::mem::take(&mut cur_run_text);
+                            if !t.is_empty() {
+                                let fpt = (cur_fs as f64 / 100.0).clamp(6.0, 48.0);
+                                cur_para_runs.push((t, fpt, cur_bold));
+                            }
+                            in_run = false; in_rpr = false;
+                        }
+                        b"rPr"    => in_rpr = false,
+                        b"t"      => in_t = false,
+                        b"blipFill" => in_blipfill = false,
+                        _ => {}
+                    }
+                }
+                Event::Text(ref e) if in_t => {
+                    cur_run_text.push_str(&e.unescape().unwrap_or_default());
+                }
+                _ => {}
+            }
+            buf.clear();
+        }
+        all_slides.push((PptxSlide { shapes }, rels));
+    }
+
+    // ── Render slides → PDF ───────────────────────────────────────────────
+    let mut doc = Document::with_version("1.5");
+    let mut nid: u32 = 1;
+
+    let catalog_id: ObjectId = (nid, 0); nid += 1;
+    let pages_id:   ObjectId = (nid, 0); nid += 1;
+    let font_id:    ObjectId = (nid, 0); nid += 1;
+    let font_bold_id: ObjectId = (nid, 0); nid += 1;
+
+    {
+        let mut fd = lopdf::Dictionary::new();
+        fd.set("Type",     Object::Name(b"Font".to_vec()));
+        fd.set("Subtype",  Object::Name(b"Type1".to_vec()));
+        fd.set("BaseFont", Object::Name(b"Helvetica".to_vec()));
+        fd.set("Encoding", Object::Name(b"WinAnsiEncoding".to_vec()));
+        doc.objects.insert(font_id, Object::Dictionary(fd));
+        let mut fdb = lopdf::Dictionary::new();
+        fdb.set("Type",     Object::Name(b"Font".to_vec()));
+        fdb.set("Subtype",  Object::Name(b"Type1".to_vec()));
+        fdb.set("BaseFont", Object::Name(b"Helvetica-Bold".to_vec()));
+        fdb.set("Encoding", Object::Name(b"WinAnsiEncoding".to_vec()));
+        doc.objects.insert(font_bold_id, Object::Dictionary(fdb));
+    }
+
+    let mut page_ids: Vec<Object> = Vec::new();
+
+    for (slide, rels) in &all_slides {
+        let mut content = String::new();
+        let mut xobjects_d = lopdf::Dictionary::new();
+
+        // Slide background (light grey)
+        content.push_str(&format!(
+            "q\n0.97 0.97 0.97 rg\n{:.2} {:.2} {:.2} {:.2} re\nf\nQ\n",
+            x_off, y_off, rendered_w, rendered_h));
+
+        // Border
+        content.push_str(&format!(
+            "q\n0.7 0.7 0.7 RG\n0.5 w\n{:.2} {:.2} {:.2} {:.2} re\nS\nQ\n",
+            x_off, y_off, rendered_w, rendered_h));
+
+        // Sort shapes: images first, then text on top
+        for shape in &slide.shapes {
+            let pdf_x  = pptx_x_to_pdf(shape.x);
+            let pdf_yt = pptx_y_to_pdf(shape.y);         // top of shape in PDF coords
+            let pdf_yb = pptx_y_to_pdf(shape.y + shape.cy); // bottom
+            let w_pdf  = shape.cx * scale;
+            let h_pdf  = (pdf_yt - pdf_yb).abs();
+
+            // ── Embed image if present ────────────────────────────
+            if let Some(ref rid) = shape.img_r_id {
+                if let Some(media_path) = rels.get(rid) {
+                    if let Ok(mut entry) = archive.by_name(media_path) {
+                        let mut img_bytes: Vec<u8> = Vec::new();
+                        if entry.read_to_end(&mut img_bytes).is_ok() {
+                            if let Ok(img) = image::load_from_memory(&img_bytes) {
+                                let (iw, ih) = img.dimensions();
+                                let rgb = img.to_rgb8();
+                                let mut jpeg: Vec<u8> = Vec::new();
+                                if image::codecs::jpeg::JpegEncoder::new_with_quality(&mut jpeg, 85)
+                                    .encode_image(&rgb).is_ok()
+                                {
+                                    let img_id: ObjectId = (nid, 0); nid += 1;
+                                    let im_name = format!("Im{}", nid);
+                                    let mut imd = lopdf::Dictionary::new();
+                                    imd.set("Type",             Object::Name(b"XObject".to_vec()));
+                                    imd.set("Subtype",          Object::Name(b"Image".to_vec()));
+                                    imd.set("Width",            Object::Integer(iw as i64));
+                                    imd.set("Height",           Object::Integer(ih as i64));
+                                    imd.set("ColorSpace",       Object::Name(b"DeviceRGB".to_vec()));
+                                    imd.set("BitsPerComponent", Object::Integer(8));
+                                    imd.set("Filter",           Object::Name(b"DCTDecode".to_vec()));
+                                    imd.set("Length",           Object::Integer(jpeg.len() as i64));
+                                    doc.objects.insert(img_id, Object::Stream(lopdf::Stream::new(imd, jpeg)));
+                                    xobjects_d.set(im_name.as_bytes().to_vec(), Object::Reference(img_id));
+
+                                    let bot_y = pdf_yb.min(pdf_yt);
+                                    content.push_str(&format!(
+                                        "q\n{:.4} 0 0 {:.4} {:.4} {:.4} cm\n/{} Do\nQ\n",
+                                        w_pdf, h_pdf, pdf_x, bot_y, im_name));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Render text runs ──────────────────────────────────
+            if !shape.text_runs.is_empty() {
+                // Collect non-empty text
+                let all_text: String = shape.text_runs.iter()
+                    .map(|(t, _, _)| t.as_str())
+                    .collect::<Vec<_>>()
+                    .join("");
+                if all_text.trim().is_empty() { continue; }
+
+                // Determine dominant font size
+                let dom_fs = shape.text_runs.iter()
+                    .filter(|(t, fs, _)| *fs > 0.0 && !t.trim().is_empty())
+                    .map(|(_, fs, _)| *fs)
+                    .fold(0.0f64, f64::max)
+                    .clamp(6.0, 48.0);
+                let fs = if dom_fs < 1.0 { 12.0 } else { dom_fs * scale };
+                let is_bold = shape.text_runs.iter().any(|(_, _, b)| *b);
+
+                // Wrap text to fit shape width
+                let char_w = fs * 0.55;
+                let avail_chars = ((w_pdf / char_w) as usize).max(5);
+                let font_key = if is_bold { "F2" } else { "F1" };
+                let lh = fs * 1.2;
+
+                let mut text_y = pdf_yt - fs * 0.2;
+                let text_x = pdf_x + 2.0 * scale;
+
+                let mut line_buf = String::new();
+                let combined: String = shape.text_runs.iter()
+                    .flat_map(|(t, _, _)| t.chars())
+                    .collect();
+
+                for word in combined.split_whitespace() {
+                    if word == "\n" {
+                        if !line_buf.is_empty() {
+                            if text_y > y_off {
+                                content.push_str(&format!(
+                                    "BT\n/{} {:.2} Tf\n{:.2} {:.2} Td\n({}) Tj\nET\n",
+                                    font_key, fs, text_x, text_y,
+                                    pdf_escape_latin(&line_buf)));
+                            }
+                            line_buf.clear();
+                        }
+                        text_y -= lh;
+                        continue;
+                    }
+                    if line_buf.is_empty() {
+                        line_buf.push_str(word);
+                    } else if line_buf.len() + 1 + word.len() <= avail_chars {
+                        line_buf.push(' ');
+                        line_buf.push_str(word);
+                    } else {
+                        if text_y > y_off {
+                            content.push_str(&format!(
+                                "BT\n/{} {:.2} Tf\n{:.2} {:.2} Td\n({}) Tj\nET\n",
+                                font_key, fs, text_x, text_y,
+                                pdf_escape_latin(&line_buf)));
+                        }
+                        line_buf.clear();
+                        line_buf.push_str(word);
+                        text_y -= lh;
+                    }
+                }
+                if !line_buf.is_empty() && text_y > y_off {
+                    content.push_str(&format!(
+                        "BT\n/{} {:.2} Tf\n{:.2} {:.2} Td\n({}) Tj\nET\n",
+                        font_key, fs, text_x, text_y,
+                        pdf_escape_latin(&line_buf)));
+                }
+            }
+        }
+
+        // ── Build page ────────────────────────────────────────────────────
+        let content_bytes = content.into_bytes();
+        let content_id: ObjectId = (nid, 0); nid += 1;
+        let mut cd = lopdf::Dictionary::new();
+        cd.set("Length", Object::Integer(content_bytes.len() as i64));
+        doc.objects.insert(content_id, Object::Stream(lopdf::Stream::new(cd, content_bytes)));
+
+        let res_id: ObjectId = (nid, 0); nid += 1;
+        let mut fonts_d = lopdf::Dictionary::new();
+        fonts_d.set("F1", Object::Reference(font_id));
+        fonts_d.set("F2", Object::Reference(font_bold_id));
+        let mut res_d = lopdf::Dictionary::new();
+        res_d.set("Font", Object::Dictionary(fonts_d));
+        if xobjects_d.len() > 0 {
+            res_d.set("XObject", Object::Dictionary(xobjects_d));
+        }
+        doc.objects.insert(res_id, Object::Dictionary(res_d));
+
+        let page_id: ObjectId = (nid, 0); nid += 1;
+        let mut pd = lopdf::Dictionary::new();
+        pd.set("Type",   Object::Name(b"Page".to_vec()));
+        pd.set("Parent", Object::Reference(pages_id));
+        pd.set("MediaBox", Object::Array(vec![
+            Object::Integer(0), Object::Integer(0),
+            Object::Integer(842), Object::Integer(595),
+        ]));
+        pd.set("Resources", Object::Reference(res_id));
+        pd.set("Contents",  Object::Reference(content_id));
+        doc.objects.insert(page_id, Object::Dictionary(pd));
+        page_ids.push(Object::Reference(page_id));
+    }
+
+    let count = page_ids.len() as u32;
+    let mut pages_dict = lopdf::Dictionary::new();
+    pages_dict.set("Type",  Object::Name(b"Pages".to_vec()));
+    pages_dict.set("Kids",  Object::Array(page_ids));
+    pages_dict.set("Count", Object::Integer(count as i64));
+    doc.objects.insert(pages_id, Object::Dictionary(pages_dict));
+
+    let mut catalog = lopdf::Dictionary::new();
+    catalog.set("Type",  Object::Name(b"Catalog".to_vec()));
+    catalog.set("Pages", Object::Reference(pages_id));
+    doc.objects.insert(catalog_id, Object::Dictionary(catalog));
+    doc.trailer.set("Root", Object::Reference(catalog_id));
+    doc.trailer.set("Size", Object::Integer((nid + 1) as i64));
+
+    if let Some(parent) = Path::new(output_path).parent() {
+        fs::create_dir_all(parent)?;
+    }
+    save_document(&mut doc, output_path)?;
+    Ok(count)
+}
+
+fn regex_slide_name(s: &str) -> bool {
+    // Matches "ppt/slides/slide<N>.xml"
+    if !s.starts_with("ppt/slides/slide") { return false; }
+    if !s.ends_with(".xml") { return false; }
+    let mid = &s["ppt/slides/slide".len()..s.len() - 4];
+    !mid.is_empty() && mid.chars().all(|c| c.is_ascii_digit())
+}
+
+fn slide_number_from_path(s: &str) -> u32 {
+    let mid = s.trim_start_matches("ppt/slides/slide").trim_end_matches(".xml");
+    mid.parse().unwrap_or(0)
+}
+
+/// Extract an i64 attribute value from a quick-xml BytesStart element.
+fn attr_i64(e: &quick_xml::events::BytesStart<'_>, key: &[u8]) -> i64 {
+    e.attributes().filter_map(|a| a.ok())
+        .find(|a| a.key.local_name().as_ref() == key)
+        .and_then(|a| String::from_utf8_lossy(&a.value).parse::<i64>().ok())
+        .unwrap_or(0)
+}

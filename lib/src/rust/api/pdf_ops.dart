@@ -149,3 +149,30 @@ Future<FileInfo> getFileInfo({required String path}) =>
 /// Check if PDF is encrypted.
 Future<EncryptionInfo> getPdfEncryptionInfo({required String path}) =>
     RustLib.instance.api.crateApiPdfOpsGetPdfEncryptionInfo(path: path);
+
+/// Convert a DOCX (Word) file to PDF with headings, bold text, and table grids.
+Future<PdfResult> docxToPdf({
+  required String inputPath,
+  required String outputPath,
+}) => RustLib.instance.api.crateApiPdfOpsDocxToPdf(
+  inputPath: inputPath,
+  outputPath: outputPath,
+);
+
+/// Convert an XLSX (Excel) spreadsheet to PDF with auto-width column grid.
+Future<PdfResult> xlsxToPdf({
+  required String inputPath,
+  required String outputPath,
+}) => RustLib.instance.api.crateApiPdfOpsXlsxToPdf(
+  inputPath: inputPath,
+  outputPath: outputPath,
+);
+
+/// Convert a PPTX (PowerPoint) file to PDF with positioned text and embedded images per slide.
+Future<PdfResult> pptxToPdf({
+  required String inputPath,
+  required String outputPath,
+}) => RustLib.instance.api.crateApiPdfOpsPptxToPdf(
+  inputPath: inputPath,
+  outputPath: outputPath,
+);

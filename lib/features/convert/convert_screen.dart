@@ -104,11 +104,11 @@ extension ConvertFormatX on ConvertFormat {
       case ConvertFormat.csv:
         return 'Rows formatted as a table in the PDF';
       case ConvertFormat.docx:
-        return 'Text is extracted; complex layouts are simplified';
+        return 'Headings, bold text and tables rendered natively';
       case ConvertFormat.xlsx:
-        return 'Cell data extracted; export CSV for full fidelity';
+        return 'Spreadsheet rendered as a grid table with column widths';
       case ConvertFormat.pptx:
-        return 'Each slide becomes one PDF page';
+        return 'Each slide rendered on its own page with positioned text & images';
     }
   }
 }
@@ -335,24 +335,46 @@ class _ConvertScreenState extends State<ConvertScreen> {
         barrierColor: Colors.black.withValues(alpha: 0.7),
         builder: (_) => ProcessingDialog(
           title: 'Converting ${_fmt.label}...',
-          subtitle: _fmt == ConvertFormat.pptx
-              ? 'Extracting slide content'
-              : 'Rendering as paginated PDF',
+          subtitle: switch (_fmt) {
+            ConvertFormat.docx => 'Rendering headings, paragraphs & tables',
+            ConvertFormat.xlsx => 'Rendering spreadsheet grid',
+            ConvertFormat.pptx => 'Rendering slides with positions & images',
+            _ => 'Rendering as paginated PDF',
+          },
         ),
       );
     }
 
     try {
-      final textContent = await _extractText(_selectedPath!);
       final outputPath = await PdfBridge.generateOutputPath('converted');
-      final title = p.basenameWithoutExtension(_selectedPath!);
+      PdfResult result;
 
-      final result = await textToPdf(
-        textContent: textContent,
-        outputPath: outputPath,
-        title: title,
-        fontSize: _fontSize,
-      );
+      if (_fmt == ConvertFormat.docx) {
+        result = await docxToPdf(
+          inputPath: _selectedPath!,
+          outputPath: outputPath,
+        );
+      } else if (_fmt == ConvertFormat.xlsx) {
+        result = await xlsxToPdf(
+          inputPath: _selectedPath!,
+          outputPath: outputPath,
+        );
+      } else if (_fmt == ConvertFormat.pptx) {
+        result = await pptxToPdf(
+          inputPath: _selectedPath!,
+          outputPath: outputPath,
+        );
+      } else {
+        // txt / csv — text extraction path
+        final textContent = await _extractText(_selectedPath!);
+        final title = p.basenameWithoutExtension(_selectedPath!);
+        result = await textToPdf(
+          textContent: textContent,
+          outputPath: outputPath,
+          title: title,
+          fontSize: _fontSize,
+        );
+      }
 
       if (mounted) Navigator.of(context).pop();
 
