@@ -25,7 +25,7 @@ class BatchPdfApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AppProvider>();
-    final isDark   = provider.isDarkMode;
+    final isDark = provider.isDarkMode;
 
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
@@ -41,7 +41,7 @@ class BatchPdfApp extends StatelessWidget {
     return MaterialApp(
       title: 'BatchPDF',
       debugShowCheckedModeBanner: false,
-      theme:     AppTheme.lightTheme(),
+      theme: AppTheme.lightTheme(),
       darkTheme: AppTheme.darkTheme(),
       themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
       home: const AppShell(),
@@ -78,6 +78,7 @@ class _AppShellState extends State<AppShell> {
   }
 }
 
+// ── Bottom nav ──────────────────────────────────────────────────────────────
 class _BottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -101,9 +102,27 @@ class _BottomNav extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _NavItem(icon: Icons.grid_view_rounded,  activeIcon: Icons.grid_view_rounded,  label: 'Tools',    isActive: currentIndex == 0, onTap: () => onTap(0)),
-              _NavItem(icon: Icons.folder_outlined,    activeIcon: Icons.folder_rounded,      label: 'Files',    isActive: currentIndex == 1, onTap: () => onTap(1)),
-              _NavItem(icon: Icons.settings_outlined,  activeIcon: Icons.settings_rounded,    label: 'Settings', isActive: currentIndex == 2, onTap: () => onTap(2)),
+              _NavItem(
+                icon: Icons.grid_view_outlined,
+                activeIcon: Icons.grid_view_rounded,
+                label: 'Tools',
+                isActive: currentIndex == 0,
+                onTap: () => onTap(0),
+              ),
+              _NavItem(
+                icon: Icons.folder_outlined,
+                activeIcon: Icons.folder_rounded,
+                label: 'Files',
+                isActive: currentIndex == 1,
+                onTap: () => onTap(1),
+              ),
+              _NavItem(
+                icon: Icons.settings_outlined,
+                activeIcon: Icons.settings_rounded,
+                label: 'Settings',
+                isActive: currentIndex == 2,
+                onTap: () => onTap(2),
+              ),
             ],
           ),
         ),
@@ -119,33 +138,43 @@ class _NavItem extends StatelessWidget {
   final bool isActive;
   final VoidCallback onTap;
   const _NavItem({
-    required this.icon, required this.activeIcon,
-    required this.label, required this.isActive, required this.onTap,
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
-    final isDark  = Theme.of(context).brightness == Brightness.dark;
-    final inactive= isDark ? AppColors.textMuted : AppColors.textMutedLight;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final inactive = isDark ? AppColors.textMuted : AppColors.textMutedLight;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? primary.withOpacity(0.1) : Colors.transparent,
+          color: isActive ? primary.withOpacity(0.12) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              color: isActive ? primary : inactive,
-              size: 22,
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Icon(
+                isActive ? activeIcon : icon,
+                key: ValueKey(isActive),
+                color: isActive ? primary : inactive,
+                size: 22,
+              ),
             ),
             const SizedBox(height: 3),
             Text(
