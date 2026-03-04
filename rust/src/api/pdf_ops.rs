@@ -1184,6 +1184,674 @@ fn text_to_pdf_inner(
     Ok(total_pages)
 }
 
+// ─── Document → PDF ──────────────────────────────────────────────────────────
+
+#[frb]
+pub fn document_to_pdf(
+    input_path: String,
+    output_path: String,
+    format: String,
+) -> PdfResult {
+    let start = Instant::now();
+    match document_to_pdf_inner(&input_path, &output_path, &format) {
+        Ok(pages) => ok(output_path, pages, start),
+        Err(e) => err(e.to_string()),
+    }
+}
+
+fn document_to_pdf_inner(input_path: &str, output_path: &str, format: &str) -> Result<u32> {
+    let fmt = format.to_lowercase();
+    let lines: Vec<String> = match fmt.as_str() {
+        "docx" => extract_docx_text(input_path)?,
+        "xlsx" => extract_xlsx_text(input_path)?,
+        "csv"  => extract_csv_text(input_path)?,
+        "txt"  => extract_txt_text(input_path)?,
+        "rtf"  => extract_rtf_text(input_path)?,
+        other  => return Err(anyhow!("Unsupported document format: {}", other)),
+    };
+
+    let title = Path::new(input_path)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("")
+        .to_string();
+
+    render_lines_to_pdf(&lines, output_path, &title, 11.0)
+}
+
+/// Extract text lines from a DOCX file by reading word/document.xml.
+fn extract_docx_text(path: &str) -> Result<Vec<String>> {
+    let file = fs::File::open(path).map_err(|e| anyhow!("Cannot open DOCX: {}", e))?;
+    let mut zip = zip::ZipArchive::new(file).map_err(|e| anyhow!("Not a valid DOCX: {}", e))?;
+    let xml = read_zip_entry(&mut zip, "word/document.xml")
+        .map_err(|e| anyhow!("Cannot read word/document.xml: {}", e))?;
+    parse_docx_xml(&xml)
+}
+
+fn parse_docx_xml(xml: &str) -> Result<Vec<String>> {
+    use quick_xml::Reader;
+    use quick_xml::events::Event;
+
+    let mut reader = Reader::from_str(xml);
+    reader.trim_text(true);
+
+    let mut lines: Vec<String> = Vec::new();
+    let mut current_para = String::new();
+    let mut in_table = false;
+    let mut row_cells: Vec<String> = Vec::new();
+    let mut current_cell = String::new();
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) | Ok(Event::Empty(ref e)) => {
+                match e.name().as_ref() {
+                    b"w:tbl" => { in_table = true; }
+                    b"w:tr"  => { row_cells.clear(); }
+                    b"w:br"  => {
+                        if in_table {
+                            current_cell.push(' ');
+                        } else {
+                            lines.push(current_para.trim().to_string());
+                            current_para.clear();
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Ok(Event::End(ref e)) => {
+                match e.name().as_ref() {
+                    b"w:tbl" => { in_table = false; lines.push(String::new()); }
+                    b"w:tr"  => {
+                        lines.push(row_cells.iter().map(|c| c.trim().to_string()).collect::<Vec<_>>().join("  |  "));
+                        row_cells.clear();
+                    }
+                    b"w:tc"  => { row_cells.push(current_cell.trim().to_string()); current_cell.clear(); }
+                    b"w:p"   => {
+                        if in_table {
+                            // paragraph end inside table cell – keep as space
+                        } else {
+                            lines.push(current_para.trim().to_string());
+                            current_para.clear();
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Ok(Event::Text(ref e)) => {
+                // Only capture text inside <w:t> elements – we rely on parent tag tracking via
+                // a simple heuristic: buffer into current_cell or current_para.
+                let text = e.unescape().unwrap_or_default();
+                if in_table { current_cell.push_str(&text); } else { current_para.push_str(&text); }
+            }
+            Ok(Event::Eof) => break,
+            Err(e) => return Err(anyhow!("XML parse error: {}", e)),
+            _ => {}
+        }
+    }
+    if !current_para.trim().is_empty() {
+        lines.push(current_para.trim().to_string());
+    }
+    Ok(lines)
+}
+
+/// Extract text from XLSX (first sheet only).
+fn extract_xlsx_text(path: &str) -> Result<Vec<String>> {
+    let file = fs::File::open(path).map_err(|e| anyhow!("Cannot open XLSX: {}", e))?;
+    let mut zip = zip::ZipArchive::new(file).map_err(|e| anyhow!("Not a valid XLSX: {}", e))?;
+
+    // Read shared strings (may not exist)
+    let shared_strings: Vec<String> = if let Ok(xml) = read_zip_entry(&mut zip, "xl/sharedStrings.xml") {
+        parse_xlsx_shared_strings(&xml)
+    } else {
+        Vec::new()
+    };
+
+    let sheet_xml = read_zip_entry(&mut zip, "xl/worksheets/sheet1.xml")
+        .map_err(|e| anyhow!("Cannot read sheet1.xml: {}", e))?;
+    parse_xlsx_sheet(&sheet_xml, &shared_strings)
+}
+
+fn parse_xlsx_shared_strings(xml: &str) -> Vec<String> {
+    use quick_xml::Reader;
+    use quick_xml::events::Event;
+
+    let mut reader = Reader::from_str(xml);
+    reader.trim_text(false);
+    let mut strings: Vec<String> = Vec::new();
+    let mut current = String::new();
+    let mut in_t = false;
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) if e.name().as_ref() == b"t" => { in_t = true; }
+            Ok(Event::End(ref e)) if e.name().as_ref() == b"t" => { in_t = false; }
+            Ok(Event::End(ref e)) if e.name().as_ref() == b"si" => {
+                strings.push(current.trim().to_string());
+                current.clear();
+            }
+            Ok(Event::Text(ref e)) if in_t => {
+                current.push_str(&e.unescape().unwrap_or_default());
+            }
+            Ok(Event::Eof) => break,
+            _ => {}
+        }
+    }
+    strings
+}
+
+fn parse_xlsx_sheet(xml: &str, shared: &[String]) -> Result<Vec<String>> {
+    use quick_xml::Reader;
+    use quick_xml::events::Event;
+
+    let mut reader = Reader::from_str(xml);
+    reader.trim_text(true);
+
+    let mut lines: Vec<String> = Vec::new();
+    let mut row_cells: Vec<String> = Vec::new();
+    let mut cell_value = String::new();
+    let mut cell_type = String::new();
+    let mut in_v = false;
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) => {
+                match e.name().as_ref() {
+                    b"c" => {
+                        cell_value.clear();
+                        cell_type.clear();
+                        for attr in e.attributes().flatten() {
+                            if attr.key.as_ref() == b"t" {
+                                cell_type = String::from_utf8_lossy(&attr.value).to_string();
+                            }
+                        }
+                    }
+                    b"v" | b"t" => { in_v = true; }
+                    _ => {}
+                }
+            }
+            Ok(Event::End(ref e)) => {
+                match e.name().as_ref() {
+                    b"v" | b"t" => { in_v = false; }
+                    b"c" => {
+                        let display = if cell_type == "s" {
+                            // shared string index
+                            cell_value.trim().parse::<usize>()
+                                .ok()
+                                .and_then(|i| shared.get(i))
+                                .cloned()
+                                .unwrap_or_default()
+                        } else {
+                            cell_value.trim().to_string()
+                        };
+                        row_cells.push(display);
+                    }
+                    b"row" => {
+                        lines.push(row_cells.join("  |  "));
+                        row_cells.clear();
+                    }
+                    _ => {}
+                }
+            }
+            Ok(Event::Text(ref e)) if in_v => {
+                cell_value.push_str(&e.unescape().unwrap_or_default());
+            }
+            Ok(Event::Eof) => break,
+            Err(e) => return Err(anyhow!("XML parse error in sheet: {}", e)),
+            _ => {}
+        }
+    }
+    Ok(lines)
+}
+
+/// Parse CSV into lines of pipe-separated cells.
+///
+/// **Note:** This is a simple comma-split parser. Quoted fields containing
+/// commas or embedded newlines are not supported; such fields will be split
+/// incorrectly. Use this function only with straightforward unquoted CSV data.
+fn extract_csv_text(path: &str) -> Result<Vec<String>> {
+    let content = fs::read_to_string(path).map_err(|e| anyhow!("Cannot read CSV: {}", e))?;
+    let mut lines = Vec::new();
+    for raw in content.lines() {
+        // Simple CSV split (no quoted field support for brevity)
+        let cells: Vec<&str> = raw.split(',').collect();
+        lines.push(cells.join("  |  "));
+    }
+    Ok(lines)
+}
+
+/// Read a plain text file into lines.
+fn extract_txt_text(path: &str) -> Result<Vec<String>> {
+    let content = fs::read_to_string(path).map_err(|e| anyhow!("Cannot read TXT: {}", e))?;
+    Ok(content.lines().map(|l| l.to_string()).collect())
+}
+
+/// Strip RTF control words and return plain text lines.
+fn extract_rtf_text(path: &str) -> Result<Vec<String>> {
+    let content = fs::read_to_string(path).map_err(|e| anyhow!("Cannot read RTF: {}", e))?;
+    let plain = rtf_strip(&content);
+    Ok(plain.lines().map(|l| l.to_string()).collect())
+}
+
+fn rtf_strip(rtf: &str) -> String {
+    let mut out = String::new();
+    let mut depth = 0usize;
+    let mut chars = rtf.chars().peekable();
+    while let Some(c) = chars.next() {
+        match c {
+            '{' => { depth += 1; }
+            '}' => { if depth > 0 { depth -= 1; } }
+            '\\' => {
+                // consume control word or symbol
+                if let Some(&next) = chars.peek() {
+                    if next == '\n' || next == '\r' {
+                        chars.next();
+                        if depth == 1 { out.push('\n'); }
+                    } else if next == '\'' {
+                        // \'xx hex escape – skip 3 chars
+                        chars.next();
+                        chars.next();
+                        chars.next();
+                    } else if next.is_alphabetic() {
+                        // consume word + optional numeric parameter
+                        while chars.peek().map(|c| c.is_alphanumeric() || *c == '-').unwrap_or(false) {
+                            chars.next();
+                        }
+                        // skip optional trailing space delimiter
+                        if chars.peek() == Some(&' ') { chars.next(); }
+                    } else {
+                        // symbol like \\ \{ \} \- \~
+                        let sym = chars.next().unwrap_or(' ');
+                        if depth == 1 { out.push(sym); }
+                    }
+                }
+            }
+            '\n' | '\r' => {}
+            _ if depth == 1 => { out.push(c); }
+            _ => {}
+        }
+    }
+    out
+}
+
+/// Helper: read a file entry from a ZIP archive as a String.
+fn read_zip_entry(zip: &mut zip::ZipArchive<fs::File>, name: &str) -> Result<String> {
+    use std::io::Read;
+    let mut entry = zip.by_name(name).map_err(|e| anyhow!("Entry '{}' not found: {}", name, e))?;
+    let mut buf = String::new();
+    entry.read_to_string(&mut buf).map_err(|e| anyhow!("Cannot read entry '{}': {}", name, e))?;
+    Ok(buf)
+}
+
+/// Core renderer: takes a slice of text lines and produces a PDF.
+fn render_lines_to_pdf(lines: &[String], output_path: &str, title: &str, font_size: f64) -> Result<u32> {
+    let font_size = font_size.clamp(6.0, 36.0);
+    let line_height = font_size * 1.4;
+    let margin = 50.0_f64;
+    let page_w = 595.0_f64;
+    let page_h = 842.0_f64;
+    let usable_w = page_w - 2.0 * margin;
+    let usable_h = page_h - 2.0 * margin;
+    let chars_per_line = ((usable_w / (font_size * 0.55)) as usize).max(20);
+    let lines_per_page = ((usable_h / line_height) as usize).max(1);
+
+    // Wrap lines
+    let mut all_lines: Vec<String> = Vec::new();
+    for input_line in lines {
+        if input_line.trim().is_empty() {
+            all_lines.push(String::new());
+            continue;
+        }
+        let mut current = String::new();
+        for word in input_line.split_whitespace() {
+            if current.is_empty() {
+                current = word.to_string();
+            } else if current.len() + 1 + word.len() <= chars_per_line {
+                current.push(' ');
+                current.push_str(word);
+            } else {
+                all_lines.push(current.clone());
+                current = word.to_string();
+            }
+        }
+        if !current.is_empty() {
+            all_lines.push(current);
+        }
+    }
+
+    let pages_content: Vec<Vec<String>> = all_lines.chunks(lines_per_page).map(|c| c.to_vec()).collect();
+    let total_pages = pages_content.len().max(1) as u32;
+
+    let mut doc = Document::with_version("1.5");
+    let mut next_id: u32 = 1;
+
+    let catalog_id: ObjectId = (next_id, 0); next_id += 1;
+    let pages_id: ObjectId   = (next_id, 0); next_id += 1;
+
+    let font_id: ObjectId      = (next_id, 0); next_id += 1;
+    let font_bold_id: ObjectId = (next_id, 0); next_id += 1;
+
+    let mut fd = lopdf::Dictionary::new();
+    fd.set("Type", Object::Name(b"Font".to_vec()));
+    fd.set("Subtype", Object::Name(b"Type1".to_vec()));
+    fd.set("BaseFont", Object::Name(b"Helvetica".to_vec()));
+    fd.set("Encoding", Object::Name(b"WinAnsiEncoding".to_vec()));
+    doc.objects.insert(font_id, Object::Dictionary(fd));
+
+    let mut fdb = lopdf::Dictionary::new();
+    fdb.set("Type", Object::Name(b"Font".to_vec()));
+    fdb.set("Subtype", Object::Name(b"Type1".to_vec()));
+    fdb.set("BaseFont", Object::Name(b"Helvetica-Bold".to_vec()));
+    fdb.set("Encoding", Object::Name(b"WinAnsiEncoding".to_vec()));
+    doc.objects.insert(font_bold_id, Object::Dictionary(fdb));
+
+    let res_id: ObjectId = (next_id, 0); next_id += 1;
+    let mut fonts_dict = lopdf::Dictionary::new();
+    fonts_dict.set("F1", Object::Reference(font_id));
+    fonts_dict.set("F2", Object::Reference(font_bold_id));
+    let mut res_dict = lopdf::Dictionary::new();
+    res_dict.set("Font", Object::Dictionary(fonts_dict));
+    doc.objects.insert(res_id, Object::Dictionary(res_dict));
+
+    let mut page_ids: Vec<Object> = Vec::new();
+
+    for (page_idx, page_lines) in pages_content.iter().enumerate() {
+        let mut content_ops = String::new();
+
+        if page_idx == 0 && !title.is_empty() {
+            let safe_title = pdf_escape(title);
+            content_ops.push_str(&format!(
+                "BT\n/F2 {:.1} Tf\n{:.2} {:.2} Td\n0 0 0 rg\n({}) Tj\nET\n",
+                font_size + 2.0, margin, page_h - margin, safe_title,
+            ));
+        }
+
+        if !page_lines.is_empty() {
+            content_ops.push_str(&format!(
+                "BT\n/F1 {:.1} Tf\n{:.2} {:.2} Td\n{:.2} TL\n0.1 0.1 0.1 rg\n",
+                font_size,
+                margin,
+                page_h - margin - (if page_idx == 0 && !title.is_empty() { font_size * 2.5 } else { 0.0 }),
+                line_height,
+            ));
+            for line in page_lines {
+                let safe = pdf_escape(line);
+                content_ops.push_str(&format!("({}) '\n", safe));
+            }
+            content_ops.push_str("ET\n");
+        }
+
+        content_ops.push_str(&format!(
+            "BT\n/F1 8 Tf\n{:.2} {:.2} Td\n0.5 0.5 0.5 rg\n(Page {} of {}) Tj\nET\n",
+            page_w / 2.0 - 20.0, margin / 2.0, page_idx + 1, total_pages,
+        ));
+
+        let content_bytes = content_ops.into_bytes();
+        let content_id: ObjectId = (next_id, 0); next_id += 1;
+        let mut cd = lopdf::Dictionary::new();
+        cd.set("Length", Object::Integer(content_bytes.len() as i64));
+        doc.objects.insert(content_id, Object::Stream(lopdf::Stream::new(cd, content_bytes)));
+
+        let page_id: ObjectId = (next_id, 0); next_id += 1;
+        let mut pd = lopdf::Dictionary::new();
+        pd.set("Type", Object::Name(b"Page".to_vec()));
+        pd.set("Parent", Object::Reference(pages_id));
+        pd.set("MediaBox", Object::Array(vec![
+            Object::Integer(0), Object::Integer(0),
+            Object::Integer(595), Object::Integer(842),
+        ]));
+        pd.set("Resources", Object::Reference(res_id));
+        pd.set("Contents", Object::Reference(content_id));
+        doc.objects.insert(page_id, Object::Dictionary(pd));
+        page_ids.push(Object::Reference(page_id));
+    }
+
+    let mut pages_dict = lopdf::Dictionary::new();
+    pages_dict.set("Type", Object::Name(b"Pages".to_vec()));
+    pages_dict.set("Kids", Object::Array(page_ids));
+    pages_dict.set("Count", Object::Integer(total_pages as i64));
+    doc.objects.insert(pages_id, Object::Dictionary(pages_dict));
+
+    let mut catalog = lopdf::Dictionary::new();
+    catalog.set("Type", Object::Name(b"Catalog".to_vec()));
+    catalog.set("Pages", Object::Reference(pages_id));
+    doc.objects.insert(catalog_id, Object::Dictionary(catalog));
+
+    doc.trailer.set("Root", Object::Reference(catalog_id));
+    doc.trailer.set("Size", Object::Integer((next_id + 1) as i64));
+
+    if let Some(parent) = Path::new(output_path).parent() {
+        fs::create_dir_all(parent)?;
+    }
+    save_document(&mut doc, output_path)?;
+    Ok(total_pages)
+}
+
+// ─── PPTX → PDF ──────────────────────────────────────────────────────────────
+
+#[frb]
+pub fn pptx_to_pdf(input_path: String, output_path: String) -> PdfResult {
+    let start = Instant::now();
+    match pptx_to_pdf_inner(&input_path, &output_path) {
+        Ok(pages) => ok(output_path, pages, start),
+        Err(e) => err(e.to_string()),
+    }
+}
+
+fn pptx_to_pdf_inner(input_path: &str, output_path: &str) -> Result<u32> {
+    let file = fs::File::open(input_path).map_err(|e| anyhow!("Cannot open PPTX: {}", e))?;
+    let mut zip = zip::ZipArchive::new(file).map_err(|e| anyhow!("Not a valid PPTX: {}", e))?;
+
+    // Collect slide entry names
+    let slide_names: Vec<String> = {
+        let mut names: Vec<String> = (0..zip.len())
+            .filter_map(|i| zip.by_index(i).ok().map(|e| e.name().to_string()))
+            .filter(|n| {
+                let p = n.as_str();
+                p.starts_with("ppt/slides/slide") && p.ends_with(".xml")
+                    && !p.contains("slideLayout") && !p.contains("slideMaster")
+            })
+            .collect();
+        // Sort by slide number
+        names.sort_by(|a, b| {
+            let num = |s: &str| -> u32 {
+                s.trim_start_matches("ppt/slides/slide")
+                    .trim_end_matches(".xml")
+                    .parse()
+                    .unwrap_or(0)
+            };
+            num(a).cmp(&num(b))
+        });
+        names
+    };
+
+    if slide_names.is_empty() {
+        return Err(anyhow!("No slides found in PPTX"));
+    }
+
+    // Landscape A4 (842 x 595 pt)
+    let page_w = 842.0_f64;
+    let page_h = 595.0_f64;
+    let margin  = 50.0_f64;
+    let font_size = 14.0_f64;
+    let line_height = font_size * 1.4;
+
+    let mut doc = Document::with_version("1.5");
+    let mut next_id: u32 = 1;
+
+    let catalog_id: ObjectId = (next_id, 0); next_id += 1;
+    let pages_id: ObjectId   = (next_id, 0); next_id += 1;
+
+    let font_id: ObjectId      = (next_id, 0); next_id += 1;
+    let font_bold_id: ObjectId = (next_id, 0); next_id += 1;
+
+    let mut fd = lopdf::Dictionary::new();
+    fd.set("Type", Object::Name(b"Font".to_vec()));
+    fd.set("Subtype", Object::Name(b"Type1".to_vec()));
+    fd.set("BaseFont", Object::Name(b"Helvetica".to_vec()));
+    fd.set("Encoding", Object::Name(b"WinAnsiEncoding".to_vec()));
+    doc.objects.insert(font_id, Object::Dictionary(fd));
+
+    let mut fdb = lopdf::Dictionary::new();
+    fdb.set("Type", Object::Name(b"Font".to_vec()));
+    fdb.set("Subtype", Object::Name(b"Type1".to_vec()));
+    fdb.set("BaseFont", Object::Name(b"Helvetica-Bold".to_vec()));
+    fdb.set("Encoding", Object::Name(b"WinAnsiEncoding".to_vec()));
+    doc.objects.insert(font_bold_id, Object::Dictionary(fdb));
+
+    let res_id: ObjectId = (next_id, 0); next_id += 1;
+    let mut fonts_dict = lopdf::Dictionary::new();
+    fonts_dict.set("F1", Object::Reference(font_id));
+    fonts_dict.set("F2", Object::Reference(font_bold_id));
+    let mut res_dict = lopdf::Dictionary::new();
+    res_dict.set("Font", Object::Dictionary(fonts_dict));
+    doc.objects.insert(res_id, Object::Dictionary(res_dict));
+
+    let mut page_ids: Vec<Object> = Vec::new();
+    let total_slides = slide_names.len() as u32;
+
+    for (slide_idx, slide_name) in slide_names.iter().enumerate() {
+        let slide_xml = read_zip_entry(&mut zip, slide_name)
+            .unwrap_or_default();
+        let text_blocks = parse_pptx_slide(&slide_xml);
+
+        let mut wrapped: Vec<(String, bool)> = Vec::new(); // (text, is_title)
+        for (text, is_title) in &text_blocks {
+            if text.trim().is_empty() { continue; }
+            let fs = if *is_title { font_size + 4.0 } else { font_size };
+            let cpl = ((page_w - 2.0 * margin) / (fs * 0.55)) as usize;
+            let mut cur = String::new();
+            for word in text.split_whitespace() {
+                if cur.is_empty() {
+                    cur = word.to_string();
+                } else if cur.len() + 1 + word.len() <= cpl {
+                    cur.push(' ');
+                    cur.push_str(word);
+                } else {
+                    wrapped.push((cur.clone(), *is_title));
+                    cur = word.to_string();
+                }
+            }
+            if !cur.is_empty() { wrapped.push((cur, *is_title)); }
+        }
+
+        let mut content_ops = String::new();
+        let mut y = page_h - margin;
+
+        for (line, is_title) in &wrapped {
+            if y < margin { break; }
+            let safe = pdf_escape(line);
+            let fs = if *is_title { font_size + 4.0 } else { font_size };
+            let font_ref = if *is_title { "F2" } else { "F1" };
+            content_ops.push_str(&format!(
+                "BT\n/{} {:.1} Tf\n{:.2} {:.2} Td\n0.05 0.05 0.15 rg\n({}) Tj\nET\n",
+                font_ref, fs, margin, y, safe,
+            ));
+            y -= if *is_title { (fs + 4.0) * 1.4 } else { line_height };
+        }
+
+        // Slide number footer
+        content_ops.push_str(&format!(
+            "BT\n/F1 8 Tf\n{:.2} {:.2} Td\n0.5 0.5 0.5 rg\n(Slide {} of {}) Tj\nET\n",
+            page_w / 2.0 - 25.0, margin / 2.0, slide_idx + 1, total_slides,
+        ));
+
+        let content_bytes = content_ops.into_bytes();
+        let content_id: ObjectId = (next_id, 0); next_id += 1;
+        let mut cd = lopdf::Dictionary::new();
+        cd.set("Length", Object::Integer(content_bytes.len() as i64));
+        doc.objects.insert(content_id, Object::Stream(lopdf::Stream::new(cd, content_bytes)));
+
+        let page_id: ObjectId = (next_id, 0); next_id += 1;
+        let mut pd = lopdf::Dictionary::new();
+        pd.set("Type", Object::Name(b"Page".to_vec()));
+        pd.set("Parent", Object::Reference(pages_id));
+        pd.set("MediaBox", Object::Array(vec![
+            Object::Integer(0), Object::Integer(0),
+            Object::Real(page_w as f32), Object::Real(page_h as f32),
+        ]));
+        pd.set("Resources", Object::Reference(res_id));
+        pd.set("Contents", Object::Reference(content_id));
+        doc.objects.insert(page_id, Object::Dictionary(pd));
+        page_ids.push(Object::Reference(page_id));
+    }
+
+    let mut pages_dict = lopdf::Dictionary::new();
+    pages_dict.set("Type", Object::Name(b"Pages".to_vec()));
+    pages_dict.set("Kids", Object::Array(page_ids));
+    pages_dict.set("Count", Object::Integer(total_slides as i64));
+    doc.objects.insert(pages_id, Object::Dictionary(pages_dict));
+
+    let mut catalog = lopdf::Dictionary::new();
+    catalog.set("Type", Object::Name(b"Catalog".to_vec()));
+    catalog.set("Pages", Object::Reference(pages_id));
+    doc.objects.insert(catalog_id, Object::Dictionary(catalog));
+
+    doc.trailer.set("Root", Object::Reference(catalog_id));
+    doc.trailer.set("Size", Object::Integer((next_id + 1) as i64));
+
+    if let Some(parent) = Path::new(output_path).parent() {
+        fs::create_dir_all(parent)?;
+    }
+    save_document(&mut doc, output_path)?;
+    Ok(total_slides)
+}
+
+/// Extract (text, is_title) pairs from a PPTX slide XML.
+fn parse_pptx_slide(xml: &str) -> Vec<(String, bool)> {
+    use quick_xml::Reader;
+    use quick_xml::events::Event;
+
+    let mut reader = Reader::from_str(xml);
+    reader.trim_text(true);
+
+    let mut results: Vec<(String, bool)> = Vec::new();
+    let mut current_para = String::new();
+    // Track nesting to detect title placeholders
+    let mut in_title_ph = false;
+    let mut in_t = false;
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) => {
+                match e.name().as_ref() {
+                    b"p:sp" => { in_title_ph = false; }
+                    b"p:ph" => {
+                        for attr in e.attributes().flatten() {
+                            if attr.key.as_ref() == b"type" {
+                                let val = String::from_utf8_lossy(&attr.value);
+                                if val == "title" || val == "ctrTitle" {
+                                    in_title_ph = true;
+                                }
+                            }
+                        }
+                    }
+                    b"a:t" => { in_t = true; }
+                    _ => {}
+                }
+            }
+            Ok(Event::End(ref e)) => {
+                match e.name().as_ref() {
+                    b"a:t" => { in_t = false; }
+                    b"a:p" => {
+                        if !current_para.trim().is_empty() {
+                            results.push((current_para.trim().to_string(), in_title_ph));
+                        }
+                        current_para.clear();
+                    }
+                    b"p:sp" => { in_title_ph = false; }
+                    _ => {}
+                }
+            }
+            Ok(Event::Text(ref e)) if in_t => {
+                current_para.push_str(&e.unescape().unwrap_or_default());
+            }
+            Ok(Event::Eof) => break,
+            _ => {}
+        }
+    }
+    results
+}
+
 fn pdf_escape(s: &str) -> String {
     s.chars()
         .filter(|c| c.is_ascii() && *c != '\x00')
