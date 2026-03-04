@@ -67,6 +67,7 @@ class PdfFileModel {
   final int sizeBytes;
   final int pageCount;
   final PdfOperation operation;
+  final String? operationSubtype;
   final DateTime createdAt;
   final int processingMs;
 
@@ -77,6 +78,7 @@ class PdfFileModel {
     required this.sizeBytes,
     required this.pageCount,
     required this.operation,
+    this.operationSubtype,
     required this.createdAt,
     required this.processingMs,
   });
@@ -104,6 +106,7 @@ class PdfFileModel {
     'sizeBytes': sizeBytes,
     'pageCount': pageCount,
     'operation': operation.index,
+    'operationSubtype': operationSubtype,
     'createdAt': createdAt.toIso8601String(),
     'processingMs': processingMs,
   };
@@ -115,6 +118,7 @@ class PdfFileModel {
     sizeBytes: json['sizeBytes'] as int,
     pageCount: json['pageCount'] as int,
     operation: PdfOperation.values[json['operation'] as int],
+    operationSubtype: json['operationSubtype'] as String?,
     createdAt: DateTime.parse(json['createdAt'] as String),
     processingMs: json['processingMs'] as int,
   );

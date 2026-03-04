@@ -13,19 +13,20 @@ import '../pdf_to_images/pdf_to_images_screen.dart';
 import '../compress/compress_screen.dart';
 import '../sign/sign_screen.dart';
 import '../convert/convert_screen.dart';
+import '../../core/theme/tool_colors.dart';
 
 // ── Tool data model ──────────────────────────────────────────────────────────
 class _Tool {
   final IconData icon;
   final String title;
-  final Color color;
+  final ToolColorKey colorKey;
   final Widget Function() screenBuilder;
   final bool isPro;
 
   const _Tool({
     required this.icon,
     required this.title,
-    required this.color,
+    required this.colorKey,
     required this.screenBuilder,
     this.isPro = false,
   });
@@ -38,13 +39,13 @@ final List<_ToolSection> _sections = [
       _Tool(
         icon: Icons.merge_rounded,
         title: 'Merge',
-        color: const Color(0xFF3B82F6),
+        colorKey: ToolColorKey.merge,
         screenBuilder: MergeScreen.new,
       ),
       _Tool(
         icon: Icons.content_cut_rounded,
         title: 'Split',
-        color: const Color(0xFF8B5CF6),
+        colorKey: ToolColorKey.split,
         screenBuilder: SplitScreen.new,
       ),
     ],
@@ -55,13 +56,13 @@ final List<_ToolSection> _sections = [
       _Tool(
         icon: Icons.lock_rounded,
         title: 'Protect',
-        color: const Color(0xFF10B981),
+        colorKey: ToolColorKey.protect,
         screenBuilder: ProtectScreen.new,
       ),
       _Tool(
         icon: Icons.lock_open_rounded,
         title: 'Unlock',
-        color: const Color(0xFFF59E0B),
+        colorKey: ToolColorKey.unlock,
         screenBuilder: UnlockScreen.new,
       ),
     ],
@@ -72,47 +73,47 @@ final List<_ToolSection> _sections = [
       _Tool(
         icon: Icons.image_rounded,
         title: 'Images→PDF',
-        color: const Color(0xFFEF4444),
+        colorKey: ToolColorKey.imgToPdf,
         screenBuilder: ImageToPdfScreen.new,
       ),
       _Tool(
         icon: Icons.burst_mode_rounded,
         title: 'PDF→Images',
-        color: const Color(0xFF06B6D4),
+        colorKey: ToolColorKey.pdfToImg,
         screenBuilder: PdfToImagesScreen.new,
       ),
       _Tool(
         icon: Icons.text_snippet_rounded,
         title: 'TXT→PDF',
-        color: const Color(0xFF3B82F6),
+        colorKey: ToolColorKey.convertTxt,
         screenBuilder: () => const ConvertScreen(format: ConvertFormat.txt),
         isPro: true,
       ),
       _Tool(
         icon: Icons.table_chart_rounded,
         title: 'CSV→PDF',
-        color: const Color(0xFF10B981),
+        colorKey: ToolColorKey.convertCsv,
         screenBuilder: () => const ConvertScreen(format: ConvertFormat.csv),
         isPro: true,
       ),
       _Tool(
         icon: Icons.description_rounded,
         title: 'DOCX→PDF',
-        color: const Color(0xFF8B5CF6),
+        colorKey: ToolColorKey.convertDocx,
         screenBuilder: () => const ConvertScreen(format: ConvertFormat.docx),
         isPro: true,
       ),
       _Tool(
         icon: Icons.grid_on_rounded,
         title: 'XLSX→PDF',
-        color: const Color(0xFFF59E0B),
+        colorKey: ToolColorKey.convertXlsx,
         screenBuilder: () => const ConvertScreen(format: ConvertFormat.xlsx),
         isPro: true,
       ),
       _Tool(
         icon: Icons.slideshow_rounded,
         title: 'PPT→PDF',
-        color: const Color(0xFFEF4444),
+        colorKey: ToolColorKey.convertPptx,
         screenBuilder: () => const ConvertScreen(format: ConvertFormat.pptx),
         isPro: true,
       ),
@@ -124,13 +125,13 @@ final List<_ToolSection> _sections = [
       _Tool(
         icon: Icons.compress_rounded,
         title: 'Compress',
-        color: const Color(0xFFF97316),
+        colorKey: ToolColorKey.compress,
         screenBuilder: CompressScreen.new,
       ),
       _Tool(
         icon: Icons.draw_rounded,
         title: 'Sign',
-        color: const Color(0xFFEC4899),
+        colorKey: ToolColorKey.sign,
         screenBuilder: SignScreen.new,
       ),
     ],
@@ -503,9 +504,8 @@ class _ToolCardState extends State<_ToolCard> {
     final textSec = widget.isDark
         ? AppColors.textSecondaryFor(context)
         : AppColors.textSecondaryLight;
-    final shadowColor = widget.tool.color.withValues(
-      alpha: widget.isDark ? 0.22 : 0.14,
-    );
+    final tc = ToolColors(Theme.of(context).colorScheme);
+    final color = tc.forKey(widget.tool.colorKey);
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
@@ -525,14 +525,6 @@ class _ToolCardState extends State<_ToolCard> {
             border: Border.all(
               color: borderCol.withValues(alpha: widget.isDark ? 0.45 : 0.75),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: shadowColor,
-                blurRadius: 22,
-                spreadRadius: 1,
-                offset: const Offset(0, 8),
-              ),
-            ],
           ),
           child: Row(
             children: [
@@ -540,21 +532,14 @@ class _ToolCardState extends State<_ToolCard> {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: widget.tool.color.withValues(alpha: 0.18),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: widget.tool.color.withValues(alpha: 0.22),
-                      blurRadius: 14,
-                      spreadRadius: 1,
-                    ),
-                  ],
                 ),
                 child: Icon(
                   widget.tool.icon,
                   color: widget.isLocked
-                      ? widget.tool.color.withValues(alpha: 0.35)
-                      : widget.tool.color,
+                      ? color.withValues(alpha: 0.35)
+                      : color,
                   size: 18,
                 ),
               ),

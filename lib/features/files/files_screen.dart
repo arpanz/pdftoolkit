@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/providers/app_provider.dart';
 import '../../core/models/pdf_file_model.dart';
+import '../../core/theme/tool_colors.dart';
 
 class FilesScreen extends StatelessWidget {
   const FilesScreen({super.key});
@@ -81,20 +82,7 @@ class FilesScreen extends StatelessWidget {
                               ? AppColors.cardFor(context)
                               : AppColors.bgCardLight,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: borderCol.withValues(
-                              alpha: isDark ? 0.45 : 0.8,
-                            ),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(
-                                alpha: isDark ? 0.24 : 0.06,
-                              ),
-                              blurRadius: 16,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
+                          border: Border.all(color: borderCol),
                         ),
                         child: Icon(
                           Icons.refresh_rounded,
@@ -285,26 +273,66 @@ class _FileCard extends StatelessWidget {
     required this.onOpen,
   });
 
-  Color get _opColor {
+  Color _opColor(BuildContext context) {
+    final tc = ToolColors(Theme.of(context).colorScheme);
     switch (file.operation) {
       case PdfOperation.merge:
-        return const Color(0xFF3B82F6);
+        return tc.merge;
       case PdfOperation.split:
-        return const Color(0xFF8B5CF6);
+        return tc.split;
       case PdfOperation.protect:
-        return const Color(0xFF10B981);
+        return tc.protect;
       case PdfOperation.unlock:
-        return const Color(0xFFF59E0B);
+        return tc.unlock;
       case PdfOperation.imageToPdf:
-        return const Color(0xFFEF4444);
+        return tc.imgToPdf;
       case PdfOperation.compress:
-        return const Color(0xFFF97316);
+        return tc.compress;
       case PdfOperation.sign:
-        return const Color(0xFFEC4899);
+        return tc.sign;
       case PdfOperation.convert:
-        return const Color(0xFF84CC16);
+        switch (file.operationSubtype?.toLowerCase()) {
+          case 'docx':
+          case 'doc':
+            return tc.convertDocx;
+          case 'csv':
+            return tc.convertCsv;
+          case 'xlsx':
+          case 'xls':
+            return tc.convertXlsx;
+          case 'pptx':
+          case 'ppt':
+            return tc.convertPptx;
+          case 'txt':
+          default:
+            return tc.convertTxt;
+        }
       case PdfOperation.pdfToImages:
-        return const Color(0xFF06B6D4);
+        return tc.pdfToImg;
+    }
+  }
+
+  String _operationLabel() {
+    if (file.operation != PdfOperation.convert) {
+      return file.operation.label;
+    }
+
+    switch (file.operationSubtype?.toLowerCase()) {
+      case 'docx':
+      case 'doc':
+        return 'DOCX→PDF';
+      case 'csv':
+        return 'CSV→PDF';
+      case 'xlsx':
+      case 'xls':
+        return 'XLSX→PDF';
+      case 'pptx':
+      case 'ppt':
+        return 'PPT→PDF';
+      case 'txt':
+        return 'TXT→PDF';
+      default:
+        return 'Converted';
     }
   }
 
@@ -361,17 +389,7 @@ class _FileCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: cardCol,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: borderCol.withValues(alpha: isDark ? 0.45 : 0.78),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: _opColor.withValues(alpha: isDark ? 0.16 : 0.09),
-                blurRadius: 22,
-                spreadRadius: 1,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            border: Border.all(color: borderCol),
           ),
           child: Row(
             children: [
@@ -379,19 +397,12 @@ class _FileCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: _opColor.withValues(alpha: 0.16),
+                  color: _opColor(context).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: _opColor.withValues(alpha: 0.22),
-                      blurRadius: 16,
-                      spreadRadius: 1,
-                    ),
-                  ],
                 ),
                 child: Icon(
                   Icons.picture_as_pdf_rounded,
-                  color: _opColor,
+                  color: _opColor(context),
                   size: 24,
                 ),
               ),
@@ -420,13 +431,13 @@ class _FileCard extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: _opColor.withValues(alpha: 0.1),
+                            color: _opColor(context).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            '${file.operation.icon} ${file.operation.label}',
+                            '${file.operation.icon} ${_operationLabel()}',
                             style: TextStyle(
-                              color: _opColor,
+                              color: _opColor(context),
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
                             ),

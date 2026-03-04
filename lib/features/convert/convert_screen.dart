@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:archive/archive.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/tool_colors.dart';
 import '../../core/providers/app_provider.dart';
 import '../../core/models/pdf_file_model.dart';
 import '../../core/ffi/pdf_bridge.dart';
@@ -66,18 +67,18 @@ extension ConvertFormatX on ConvertFormat {
     }
   }
 
-  Color get color {
+  ToolColorKey get colorKey {
     switch (this) {
       case ConvertFormat.txt:
-        return const Color(0xFF3B82F6);
+        return ToolColorKey.convertTxt;
       case ConvertFormat.csv:
-        return const Color(0xFF10B981);
+        return ToolColorKey.convertCsv;
       case ConvertFormat.docx:
-        return const Color(0xFF8B5CF6);
+        return ToolColorKey.convertDocx;
       case ConvertFormat.xlsx:
-        return const Color(0xFFF59E0B);
+        return ToolColorKey.convertXlsx;
       case ConvertFormat.pptx:
-        return const Color(0xFFEF4444);
+        return ToolColorKey.convertPptx;
     }
   }
 
@@ -363,6 +364,7 @@ class _ConvertScreenState extends State<ConvertScreen> {
           sizeBytes: File(result.outputPath).lengthSync(),
           pageCount: result.pageCount,
           operation: PdfOperation.convert,
+          operationSubtype: _fmt.ext,
           createdAt: DateTime.now(),
           processingMs: result.processingMs,
         );
@@ -407,7 +409,9 @@ class _ConvertScreenState extends State<ConvertScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final color = _fmt.color;
+    final color = ToolColors(
+      Theme.of(context).colorScheme,
+    ).forKey(_fmt.colorKey);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundFor(context),
