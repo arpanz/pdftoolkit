@@ -23,61 +23,91 @@ enum ConvertFormat { txt, csv, docx, xlsx, pptx }
 extension ConvertFormatX on ConvertFormat {
   String get label {
     switch (this) {
-      case ConvertFormat.txt:  return 'Plain Text';
-      case ConvertFormat.csv:  return 'CSV Spreadsheet';
-      case ConvertFormat.docx: return 'Word Document';
-      case ConvertFormat.xlsx: return 'Excel Spreadsheet';
-      case ConvertFormat.pptx: return 'PowerPoint';
+      case ConvertFormat.txt:
+        return 'Plain Text';
+      case ConvertFormat.csv:
+        return 'CSV Spreadsheet';
+      case ConvertFormat.docx:
+        return 'Word Document';
+      case ConvertFormat.xlsx:
+        return 'Excel Spreadsheet';
+      case ConvertFormat.pptx:
+        return 'PowerPoint';
     }
   }
 
   String get ext {
     switch (this) {
-      case ConvertFormat.txt:  return 'txt';
-      case ConvertFormat.csv:  return 'csv';
-      case ConvertFormat.docx: return 'docx';
-      case ConvertFormat.xlsx: return 'xlsx';
-      case ConvertFormat.pptx: return 'pptx';
+      case ConvertFormat.txt:
+        return 'txt';
+      case ConvertFormat.csv:
+        return 'csv';
+      case ConvertFormat.docx:
+        return 'docx';
+      case ConvertFormat.xlsx:
+        return 'xlsx';
+      case ConvertFormat.pptx:
+        return 'pptx';
     }
   }
 
   List<String> get allowedExtensions {
     switch (this) {
-      case ConvertFormat.txt:  return ['txt'];
-      case ConvertFormat.csv:  return ['csv'];
-      case ConvertFormat.docx: return ['docx', 'doc'];
-      case ConvertFormat.xlsx: return ['xlsx', 'xls'];
-      case ConvertFormat.pptx: return ['pptx', 'ppt'];
+      case ConvertFormat.txt:
+        return ['txt'];
+      case ConvertFormat.csv:
+        return ['csv'];
+      case ConvertFormat.docx:
+        return ['docx', 'doc'];
+      case ConvertFormat.xlsx:
+        return ['xlsx', 'xls'];
+      case ConvertFormat.pptx:
+        return ['pptx', 'ppt'];
     }
   }
 
   Color get color {
     switch (this) {
-      case ConvertFormat.txt:  return const Color(0xFF3B82F6);
-      case ConvertFormat.csv:  return const Color(0xFF10B981);
-      case ConvertFormat.docx: return const Color(0xFF8B5CF6);
-      case ConvertFormat.xlsx: return const Color(0xFFF59E0B);
-      case ConvertFormat.pptx: return const Color(0xFFEF4444);
+      case ConvertFormat.txt:
+        return const Color(0xFF3B82F6);
+      case ConvertFormat.csv:
+        return const Color(0xFF10B981);
+      case ConvertFormat.docx:
+        return const Color(0xFF8B5CF6);
+      case ConvertFormat.xlsx:
+        return const Color(0xFFF59E0B);
+      case ConvertFormat.pptx:
+        return const Color(0xFFEF4444);
     }
   }
 
   IconData get icon {
     switch (this) {
-      case ConvertFormat.txt:  return Icons.text_snippet_rounded;
-      case ConvertFormat.csv:  return Icons.table_chart_rounded;
-      case ConvertFormat.docx: return Icons.description_rounded;
-      case ConvertFormat.xlsx: return Icons.grid_on_rounded;
-      case ConvertFormat.pptx: return Icons.slideshow_rounded;
+      case ConvertFormat.txt:
+        return Icons.text_snippet_rounded;
+      case ConvertFormat.csv:
+        return Icons.table_chart_rounded;
+      case ConvertFormat.docx:
+        return Icons.description_rounded;
+      case ConvertFormat.xlsx:
+        return Icons.grid_on_rounded;
+      case ConvertFormat.pptx:
+        return Icons.slideshow_rounded;
     }
   }
 
   String get hint {
     switch (this) {
-      case ConvertFormat.txt:  return 'Plain text converted with wrapping & pagination';
-      case ConvertFormat.csv:  return 'Rows formatted as a table in the PDF';
-      case ConvertFormat.docx: return 'Text is extracted; complex layouts are simplified';
-      case ConvertFormat.xlsx: return 'Cell data extracted; export CSV for full fidelity';
-      case ConvertFormat.pptx: return 'Each slide becomes one PDF page';
+      case ConvertFormat.txt:
+        return 'Plain text converted with wrapping & pagination';
+      case ConvertFormat.csv:
+        return 'Rows formatted as a table in the PDF';
+      case ConvertFormat.docx:
+        return 'Text is extracted; complex layouts are simplified';
+      case ConvertFormat.xlsx:
+        return 'Cell data extracted; export CSV for full fidelity';
+      case ConvertFormat.pptx:
+        return 'Each slide becomes one PDF page';
     }
   }
 }
@@ -141,7 +171,9 @@ class _ConvertScreenState extends State<ConvertScreen> {
       );
       if (file.name.isEmpty) return '';
       final data = file.content;
-      return data is List<int> ? utf8.decode(data, allowMalformed: true) : data.toString();
+      return data is List<int>
+          ? utf8.decode(data, allowMalformed: true)
+          : data.toString();
     }
 
     String xmlEntities(String s) => s
@@ -160,7 +192,9 @@ class _ConvertScreenState extends State<ConvertScreen> {
             .replaceAll(RegExp(r'<w:tab\s*/?>'), '\t')
             .replaceAll(RegExp(r'</w:p>'), '\n');
         final matches = RegExp(r'<w:t[^>]*>([^<]*)</w:t>').allMatches(xml);
-        final text = matches.map((m) => xmlEntities(m.group(1) ?? '')).join(' ');
+        final text = matches
+            .map((m) => xmlEntities(m.group(1) ?? ''))
+            .join(' ');
         final cleaned = text.replaceAll(RegExp(r' {2,}'), ' ').trim();
         return cleaned.isEmpty ? 'DOCX had no readable text.' : cleaned;
       } catch (e) {
@@ -179,7 +213,10 @@ class _ConvertScreenState extends State<ConvertScreen> {
         );
         List<String> sharedStrings = [];
         if (ssFile.name.isNotEmpty) {
-          final ssXml = utf8.decode(ssFile.content as List<int>, allowMalformed: true);
+          final ssXml = utf8.decode(
+            ssFile.content as List<int>,
+            allowMalformed: true,
+          );
           sharedStrings = RegExp(r'<t[^>]*>([^<]*)</t>')
               .allMatches(ssXml)
               .map((m) => xmlEntities(m.group(1) ?? ''))
@@ -191,11 +228,18 @@ class _ConvertScreenState extends State<ConvertScreen> {
           (f) => f.name == 'xl/worksheets/sheet1.xml',
           orElse: () => ArchiveFile.noCompress('', 0, []),
         );
-        if (sheetFile.name.isEmpty) return 'Could not read XLSX (sheet1.xml missing).';
-        final sheetXml = utf8.decode(sheetFile.content as List<int>, allowMalformed: true);
+        if (sheetFile.name.isEmpty)
+          return 'Could not read XLSX (sheet1.xml missing).';
+        final sheetXml = utf8.decode(
+          sheetFile.content as List<int>,
+          allowMalformed: true,
+        );
 
         final rowRegex = RegExp(r'<row[^>]*>(.*?)</row>', dotAll: true);
-        final cellRegex = RegExp(r'<c[^>]*t="s"[^>]*><v>(\d+)</v></c>|<c[^>]*><v>([^<]*)</v></c>', dotAll: true);
+        final cellRegex = RegExp(
+          r'<c[^>]*t="s"[^>]*><v>(\d+)</v></c>|<c[^>]*><v>([^<]*)</v></c>',
+          dotAll: true,
+        );
 
         final lines = <String>[];
         for (final rowMatch in rowRegex.allMatches(sheetXml)) {
@@ -205,7 +249,11 @@ class _ConvertScreenState extends State<ConvertScreen> {
             if (cellMatch.group(1) != null) {
               // shared string index
               final idx = int.tryParse(cellMatch.group(1)!) ?? -1;
-              cells.add(idx >= 0 && idx < sharedStrings.length ? sharedStrings[idx] : '');
+              cells.add(
+                idx >= 0 && idx < sharedStrings.length
+                    ? sharedStrings[idx]
+                    : '',
+              );
             } else {
               cells.add(cellMatch.group(2) ?? '');
             }
@@ -223,27 +271,43 @@ class _ConvertScreenState extends State<ConvertScreen> {
     if (ext == '.pptx') {
       try {
         final archive = ZipDecoder().decodeBytes(bytes, verify: false);
-        final slideFiles = archive.files
-            .where((f) => RegExp(r'ppt/slides/slide\d+\.xml').hasMatch(f.name))
-            .toList()
-          ..sort((a, b) {
-            final ai = int.tryParse(RegExp(r'slide(\d+)\.xml').firstMatch(a.name)?.group(1) ?? '0') ?? 0;
-            final bi = int.tryParse(RegExp(r'slide(\d+)\.xml').firstMatch(b.name)?.group(1) ?? '0') ?? 0;
-            return ai.compareTo(bi);
-          });
+        final slideFiles =
+            archive.files
+                .where(
+                  (f) => RegExp(r'ppt/slides/slide\d+\.xml').hasMatch(f.name),
+                )
+                .toList()
+              ..sort((a, b) {
+                final ai =
+                    int.tryParse(
+                      RegExp(r'slide(\d+)\.xml').firstMatch(a.name)?.group(1) ??
+                          '0',
+                    ) ??
+                    0;
+                final bi =
+                    int.tryParse(
+                      RegExp(r'slide(\d+)\.xml').firstMatch(b.name)?.group(1) ??
+                          '0',
+                    ) ??
+                    0;
+                return ai.compareTo(bi);
+              });
 
         if (slideFiles.isEmpty) return 'No slides found in PPTX.';
 
         final slideTexts = <String>[];
         for (int i = 0; i < slideFiles.length; i++) {
-          final xml = utf8.decode(slideFiles[i].content as List<int>, allowMalformed: true);
+          final xml = utf8.decode(
+            slideFiles[i].content as List<int>,
+            allowMalformed: true,
+          );
           final matches = RegExp(r'<a:t>([^<]*)</a:t>').allMatches(xml);
           final texts = matches
               .map((m) => xmlEntities(m.group(1) ?? '').trim())
               .where((t) => t.isNotEmpty)
               .toList();
           if (texts.isNotEmpty) {
-            slideTexts.add('--- Slide ${i + 1} ---\n${texts.join(' ')}')
+            slideTexts.add('--- Slide ${i + 1} ---\n${texts.join(' ')}');
           } else {
             slideTexts.add('--- Slide ${i + 1} ---\n[No text content]');
           }
@@ -321,14 +385,18 @@ class _ConvertScreenState extends State<ConvertScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${result.error ?? "Unknown error"}')),
+            SnackBar(
+              content: Text('Error: ${result.error ?? "Unknown error"}'),
+            ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -422,7 +490,9 @@ class _ConvertScreenState extends State<ConvertScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            _fmt.allowedExtensions.map((e) => e.toUpperCase()).join(', '),
+                            _fmt.allowedExtensions
+                                .map((e) => e.toUpperCase())
+                                .join(', '),
                             style: TextStyle(
                               color: AppColors.textMutedFor(context),
                               fontSize: 12,
@@ -468,7 +538,10 @@ class _ConvertScreenState extends State<ConvertScreen> {
                               ],
                             ),
                           ),
-                          Icon(Icons.check_circle_rounded, color: AppColors.success),
+                          Icon(
+                            Icons.check_circle_rounded,
+                            color: AppColors.success,
+                          ),
                         ],
                       ),
               ),
@@ -546,7 +619,9 @@ class _ConvertScreenState extends State<ConvertScreen> {
             GradientButton(
               label: 'Convert to PDF',
               icon: Icons.picture_as_pdf_rounded,
-              onPressed: (_selectedPath == null || _isProcessing) ? null : _convert,
+              onPressed: (_selectedPath == null || _isProcessing)
+                  ? null
+                  : _convert,
               isLoading: _isProcessing,
             ).animate().fadeIn(delay: 200.ms),
             const SizedBox(height: 16),
