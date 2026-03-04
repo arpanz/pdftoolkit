@@ -31,18 +31,18 @@ class _Tool {
   });
 }
 
-const List<_ToolSection> _sections = [
+final List<_ToolSection> _sections = [
   _ToolSection(label: 'Organise', tools: [
     _Tool(
       icon: Icons.merge_rounded,
       title: 'Merge',
-      color: Color(0xFF3B82F6),
+      color: const Color(0xFF3B82F6),
       screenBuilder: MergeScreen.new,
     ),
     _Tool(
       icon: Icons.content_cut_rounded,
       title: 'Split',
-      color: Color(0xFF8B5CF6),
+      color: const Color(0xFF8B5CF6),
       screenBuilder: SplitScreen.new,
     ),
   ]),
@@ -50,13 +50,13 @@ const List<_ToolSection> _sections = [
     _Tool(
       icon: Icons.lock_rounded,
       title: 'Protect',
-      color: Color(0xFF10B981),
+      color: const Color(0xFF10B981),
       screenBuilder: ProtectScreen.new,
     ),
     _Tool(
       icon: Icons.lock_open_rounded,
       title: 'Unlock',
-      color: Color(0xFFF59E0B),
+      color: const Color(0xFFF59E0B),
       screenBuilder: UnlockScreen.new,
     ),
   ]),
@@ -64,20 +64,48 @@ const List<_ToolSection> _sections = [
     _Tool(
       icon: Icons.image_rounded,
       title: 'Images→PDF',
-      color: Color(0xFFEF4444),
+      color: const Color(0xFFEF4444),
       screenBuilder: ImageToPdfScreen.new,
     ),
     _Tool(
       icon: Icons.burst_mode_rounded,
       title: 'PDF→Images',
-      color: Color(0xFF06B6D4),
+      color: const Color(0xFF06B6D4),
       screenBuilder: PdfToImagesScreen.new,
     ),
     _Tool(
-      icon: Icons.upload_file_rounded,
-      title: 'File→PDF',
-      color: Color(0xFF84CC16),
-      screenBuilder: ConvertScreen.new,
+      icon: Icons.text_snippet_rounded,
+      title: 'TXT→PDF',
+      color: const Color(0xFF3B82F6),
+      screenBuilder: () => const ConvertScreen(format: ConvertFormat.txt),
+      isPro: true,
+    ),
+    _Tool(
+      icon: Icons.table_chart_rounded,
+      title: 'CSV→PDF',
+      color: const Color(0xFF10B981),
+      screenBuilder: () => const ConvertScreen(format: ConvertFormat.csv),
+      isPro: true,
+    ),
+    _Tool(
+      icon: Icons.description_rounded,
+      title: 'DOCX→PDF',
+      color: const Color(0xFF8B5CF6),
+      screenBuilder: () => const ConvertScreen(format: ConvertFormat.docx),
+      isPro: true,
+    ),
+    _Tool(
+      icon: Icons.grid_on_rounded,
+      title: 'XLSX→PDF',
+      color: const Color(0xFFF59E0B),
+      screenBuilder: () => const ConvertScreen(format: ConvertFormat.xlsx),
+      isPro: true,
+    ),
+    _Tool(
+      icon: Icons.slideshow_rounded,
+      title: 'PPT→PDF',
+      color: const Color(0xFFEF4444),
+      screenBuilder: () => const ConvertScreen(format: ConvertFormat.pptx),
       isPro: true,
     ),
   ]),
@@ -85,13 +113,13 @@ const List<_ToolSection> _sections = [
     _Tool(
       icon: Icons.compress_rounded,
       title: 'Compress',
-      color: Color(0xFFF97316),
+      color: const Color(0xFFF97316),
       screenBuilder: CompressScreen.new,
     ),
     _Tool(
       icon: Icons.draw_rounded,
       title: 'Sign',
-      color: Color(0xFFEC4899),
+      color: const Color(0xFFEC4899),
       screenBuilder: SignScreen.new,
     ),
   ]),
@@ -406,7 +434,7 @@ class _SectionBlock extends StatelessWidget {
   }
 }
 
-// ── Tool card (compact horizontal) ─────────────────────────────────────────────────
+// ── Tool card ────────────────────────────────────────────────────────────────
 class _ToolCard extends StatefulWidget {
   final _Tool tool;
   final bool isDark;
@@ -492,8 +520,7 @@ class _ToolCardState extends State<_ToolCard> {
               ),
               if (widget.isLocked)
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 5, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(5),
@@ -518,7 +545,7 @@ class _ToolCardState extends State<_ToolCard> {
   }
 }
 
-// ── Pro paywall sheet (shared) ────────────────────────────────────────────────
+// ── Pro paywall sheet ────────────────────────────────────────────────────────
 class ProPaywallSheet extends StatelessWidget {
   const ProPaywallSheet({super.key});
 
@@ -526,18 +553,11 @@ class ProPaywallSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? AppColors.cardFor(context) : AppColors.bgCardLight;
-    final border = isDark
-        ? AppColors.borderFor(context)
-        : AppColors.borderLightMode;
-    final textPri = isDark
-        ? AppColors.textPrimaryFor(context)
-        : AppColors.textPrimaryLight;
-    final textSec = isDark
-        ? AppColors.textSecondaryFor(context)
-        : AppColors.textSecondaryLight;
+    final border = isDark ? AppColors.borderFor(context) : AppColors.borderLightMode;
+    final textPri = isDark ? AppColors.textPrimaryFor(context) : AppColors.textPrimaryLight;
+    final textSec = isDark ? AppColors.textSecondaryFor(context) : AppColors.textSecondaryLight;
 
-    final locale =
-        WidgetsBinding.instance.platformDispatcher.locale.countryCode;
+    final locale = WidgetsBinding.instance.platformDispatcher.locale.countryCode;
     final priceLabel = (locale == 'IN') ? '₹295 one-time' : '\$3.50 one-time';
 
     return Container(
@@ -623,7 +643,7 @@ class ProPaywallSheet extends StatelessWidget {
             icon: Icons.upload_file_rounded,
             color: const Color(0xFF84CC16),
             title: 'File → PDF conversion',
-            subtitle: 'DOCX, XLSX, CSV support unlocked',
+            subtitle: 'DOCX, XLSX, CSV, TXT, PPT support unlocked',
             isDark: isDark,
           ),
           const SizedBox(height: 32),
