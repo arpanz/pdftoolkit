@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:open_filex/open_filex.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:path/path.dart' as p;
+import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_theme.dart';
 import 'gradient_button.dart';
 
@@ -29,28 +29,31 @@ class SuccessScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textPrimary = AppColors.textPrimaryFor(context);
+    final textSecondary = AppColors.textSecondaryFor(context);
+    final card = AppColors.cardFor(context);
+    final border = AppColors.borderFor(context);
+
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: AppColors.backgroundFor(context),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
               const Spacer(),
-
-              // Success icon
               Container(
                     width: 100,
                     height: 100,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppColors.success.withOpacity(0.15),
+                      color: AppColors.success.withValues(alpha: 0.15),
                       border: Border.all(
-                        color: AppColors.success.withOpacity(0.4),
+                        color: AppColors.success.withValues(alpha: 0.4),
                         width: 2,
                       ),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.check_rounded,
                       color: AppColors.success,
                       size: 52,
@@ -63,37 +66,25 @@ class SuccessScreen extends StatelessWidget {
                     curve: Curves.elasticOut,
                   )
                   .fadeIn(),
-
-              const SizedBox(height: 28),
-
-              // Title
+              SizedBox(height: 28),
               Text(
                 '$operationLabel Complete!',
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: textPrimary,
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
                 ),
                 textAlign: TextAlign.center,
               ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.3),
-
-              const SizedBox(height: 12),
-
-              // Filename
+              SizedBox(height: 12),
               Text(
                 p.basename(outputPath),
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: textSecondary, fontSize: 14),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ).animate().fadeIn(delay: 300.ms),
-
-              const SizedBox(height: 32),
-
-              // Stats row
+              SizedBox(height: 32),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -102,7 +93,7 @@ class SuccessScreen extends StatelessWidget {
                     label: '$pageCount pages',
                     color: AppColors.primary,
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   _StatChip(
                     icon: Icons.bolt_rounded,
                     label: _processingTime,
@@ -110,43 +101,37 @@ class SuccessScreen extends StatelessWidget {
                   ),
                 ],
               ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.3),
-
-              const SizedBox(height: 16),
-
-              // Rust speed badge
+              SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.bgCard,
+                  color: card,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: border),
                 ),
                 child: Text(
-                  '🦀 Processed by Rust Engine in $_processingTime',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                  'Processed by Rust Engine in $_processingTime',
+                  style: TextStyle(
+                    color: textSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ).animate().fadeIn(delay: 500.ms),
-
               const Spacer(),
-
-              // Action buttons
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () => OpenFilex.open(outputPath),
-                      icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                      label: const Text('Open PDF'),
+                      icon: Icon(Icons.open_in_new_rounded, size: 18),
+                      label: Text('Open PDF'),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: GradientButton(
                       label: 'Share',
@@ -156,14 +141,12 @@ class SuccessScreen extends StatelessWidget {
                   ),
                 ],
               ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.3),
-
-              const SizedBox(height: 12),
-
+              SizedBox(height: 12),
               TextButton(
                 onPressed: onDone,
-                child: const Text(
+                child: Text(
                   'Back to Workspace',
-                  style: TextStyle(color: AppColors.textSecondary),
+                  style: TextStyle(color: textSecondary),
                 ),
               ).animate().fadeIn(delay: 700.ms),
             ],
@@ -190,15 +173,15 @@ class _StatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, color: color, size: 16),
-          const SizedBox(width: 6),
+          SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(

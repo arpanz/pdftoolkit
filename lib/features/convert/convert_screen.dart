@@ -111,7 +111,9 @@ class _ConvertScreenState extends State<ConvertScreen> {
 
         final regex = RegExp(r'<w:t[^>]*>([^<]*)</w:t>');
         final matches = regex.allMatches(xml);
-        final text = matches.map((m) => decodeXmlEntities(m.group(1) ?? '')).join(' ');
+        final text = matches
+            .map((m) => decodeXmlEntities(m.group(1) ?? ''))
+            .join(' ');
 
         final cleaned = text.replaceAll(RegExp(r'[ ]{2,}'), ' ').trim();
         return cleaned.isEmpty ? 'DOCX had no readable text.' : cleaned;
@@ -130,7 +132,9 @@ class _ConvertScreenState extends State<ConvertScreen> {
 
         final regex = RegExp(r'<t[^>]*>([^<]*)</t>');
         final matches = regex.allMatches(xml);
-        final parts = matches.map((m) => decodeXmlEntities(m.group(1) ?? '')).toList();
+        final parts = matches
+            .map((m) => decodeXmlEntities(m.group(1) ?? ''))
+            .toList();
 
         final text = parts.join('\n').trim();
         return text.isEmpty ? 'XLSX had no readable text.' : text;
@@ -150,7 +154,7 @@ class _ConvertScreenState extends State<ConvertScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        barrierColor: Colors.black.withOpacity(0.7),
+        barrierColor: Colors.black.withValues(alpha: 0.7),
         builder: (_) => ProcessingDialog(
           title: 'Converting $_fileTypeLabel...',
           subtitle: 'Rendering text as paginated PDF',
@@ -202,15 +206,18 @@ class _ConvertScreenState extends State<ConvertScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${result.error ?? "Unknown error"}')),
+            SnackBar(
+              content: Text('Error: ${result.error ?? "Unknown error"}'),
+            ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -220,12 +227,12 @@ class _ConvertScreenState extends State<ConvertScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: AppColors.backgroundFor(context),
       appBar: AppBar(
-        title: const Text('Convert to PDF'),
-        backgroundColor: AppColors.bgDark,
+        title: Text('Convert to PDF'),
+        backgroundColor: AppColors.backgroundFor(context),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
+          icon: Icon(Icons.arrow_back_ios_rounded),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -244,7 +251,7 @@ class _ConvertScreenState extends State<ConvertScreen> {
                 _FormatChip(label: 'XLSX', color: const Color(0xFFF59E0B)),
               ],
             ).animate().fadeIn(),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
 
             // File picker
             GestureDetector(
@@ -253,12 +260,12 @@ class _ConvertScreenState extends State<ConvertScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColors.bgCard,
+                  color: AppColors.cardFor(context),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: _selectedPath != null
-                        ? AppColors.primary.withOpacity(0.5)
-                        : AppColors.border,
+                        ? AppColors.primary.withValues(alpha: 0.5)
+                        : AppColors.borderFor(context),
                   ),
                 ),
                 child: _selectedPath == null
@@ -268,25 +275,33 @@ class _ConvertScreenState extends State<ConvertScreen> {
                             width: 64,
                             height: 64,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF8B5CF6).withOpacity(0.1),
+                              color: const Color(
+                                0xFF8B5CF6,
+                              ).withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.upload_file_rounded,
-                                color: Color(0xFF8B5CF6), size: 32),
+                            child: Icon(
+                              Icons.upload_file_rounded,
+                              color: Color(0xFF8B5CF6),
+                              size: 32,
+                            ),
                           ),
-                          const SizedBox(height: 12),
-                          const Text(
+                          SizedBox(height: 12),
+                          Text(
                             'Tap to select a file',
                             style: TextStyle(
-                              color: AppColors.textPrimary,
+                              color: AppColors.textPrimaryFor(context),
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          const Text(
+                          SizedBox(height: 4),
+                          Text(
                             'TXT, CSV, DOCX, or XLSX',
-                            style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                            style: TextStyle(
+                              color: AppColors.textMutedFor(context),
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       )
@@ -296,13 +311,17 @@ class _ConvertScreenState extends State<ConvertScreen> {
                             width: 48,
                             height: 48,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF8B5CF6).withOpacity(0.1),
+                              color: const Color(
+                                0xFF8B5CF6,
+                              ).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Center(
                               child: Text(
-                                (_fileType ?? '.txt').toUpperCase().replaceFirst('.', ''),
-                                style: const TextStyle(
+                                (_fileType ?? '.txt')
+                                    .toUpperCase()
+                                    .replaceFirst('.', ''),
+                                style: TextStyle(
                                   color: Color(0xFF8B5CF6),
                                   fontSize: 10,
                                   fontWeight: FontWeight.w800,
@@ -310,15 +329,15 @@ class _ConvertScreenState extends State<ConvertScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 14),
+                          SizedBox(width: 14),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   p.basename(_selectedPath!),
-                                  style: const TextStyle(
-                                    color: AppColors.textPrimary,
+                                  style: TextStyle(
+                                    color: AppColors.textPrimaryFor(context),
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -327,29 +346,33 @@ class _ConvertScreenState extends State<ConvertScreen> {
                                 ),
                                 Text(
                                   _fileTypeLabel,
-                                  style: const TextStyle(
-                                      color: AppColors.textMuted, fontSize: 11),
+                                  style: TextStyle(
+                                    color: AppColors.textMutedFor(context),
+                                    fontSize: 11,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
-                          const Icon(Icons.check_circle_rounded,
-                              color: AppColors.success),
+                          Icon(
+                            Icons.check_circle_rounded,
+                            color: AppColors.success,
+                          ),
                         ],
                       ),
               ),
             ).animate().fadeIn(delay: 50.ms).slideY(begin: 0.2),
 
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // Font size
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'FONT SIZE',
                   style: TextStyle(
-                    color: AppColors.textSecondary,
+                    color: AppColors.textSecondaryFor(context),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.2,
@@ -357,10 +380,11 @@ class _ConvertScreenState extends State<ConvertScreen> {
                 ),
                 Text(
                   '${_fontSize.toStringAsFixed(0)}pt',
-                  style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),
@@ -368,7 +392,7 @@ class _ConvertScreenState extends State<ConvertScreen> {
               data: SliderTheme.of(context).copyWith(
                 activeTrackColor: AppColors.primary,
                 thumbColor: AppColors.primary,
-                inactiveTrackColor: AppColors.border,
+                inactiveTrackColor: AppColors.borderFor(context),
                 trackHeight: 4,
               ),
               child: Slider(
@@ -381,24 +405,28 @@ class _ConvertScreenState extends State<ConvertScreen> {
               ),
             ).animate().fadeIn(delay: 100.ms),
 
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF8B5CF6).withOpacity(0.08),
+                color: const Color(0xFF8B5CF6).withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF8B5CF6).withOpacity(0.2)),
+                border: Border.all(
+                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
+                ),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.info_outline_rounded,
-                      color: Color(0xFF8B5CF6), size: 16),
+                  Icon(
+                    Icons.info_outline_rounded,
+                    color: Color(0xFF8B5CF6),
+                    size: 16,
+                  ),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'DOCX/XLSX: plain text is extracted. For layout-accurate conversion, export to PDF via Word/Excel first.',
-                      style:
-                          TextStyle(color: Color(0xFF8B5CF6), fontSize: 11),
+                      style: TextStyle(color: Color(0xFF8B5CF6), fontSize: 11),
                     ),
                   ),
                 ],
@@ -410,10 +438,12 @@ class _ConvertScreenState extends State<ConvertScreen> {
             GradientButton(
               label: 'Convert to PDF',
               icon: Icons.picture_as_pdf_rounded,
-              onPressed: (_selectedPath == null || _isProcessing) ? null : _convert,
+              onPressed: (_selectedPath == null || _isProcessing)
+                  ? null
+                  : _convert,
               isLoading: _isProcessing,
             ).animate().fadeIn(delay: 200.ms),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
           ],
         ),
       ),
@@ -432,9 +462,9 @@ class _FormatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         label,

@@ -8,14 +8,19 @@ class AppProvider extends ChangeNotifier {
   static const String _filesKey = 'pdf_files';
   static const String _proKey = 'is_pro';
   static const String _darkModeKey = 'dark_mode';
+  static const String _onboardingSeenKey = 'onboarding_seen';
 
   bool _isPro = false;
   bool _isDarkMode = true;
+  bool _hasSeenOnboarding = false;
+  bool _initialized = false;
   List<PdfFileModel> _files = [];
   bool _isLoading = false;
 
   bool get isPro => _isPro;
   bool get isDarkMode => _isDarkMode;
+  bool get hasSeenOnboarding => _hasSeenOnboarding;
+  bool get initialized => _initialized;
   List<PdfFileModel> get files => List.unmodifiable(_files);
   bool get isLoading => _isLoading;
 
@@ -23,24 +28,29 @@ class AppProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _isPro = prefs.getBool(_proKey) ?? false;
     _isDarkMode = prefs.getBool(_darkModeKey) ?? true;
+    _hasSeenOnboarding = prefs.getBool(_onboardingSeenKey) ?? false;
     await _loadFiles(prefs);
+    _initialized = true;
     notifyListeners();
   }
 
   Future<void> _loadFiles(SharedPreferences prefs) async {
     final raw = prefs.getStringList(_filesKey) ?? [];
-    _files = raw
-        .map((s) {
-          try {
-            return PdfFileModel.fromJson(jsonDecode(s) as Map<String, dynamic>);
-          } catch (_) {
-            return null;
-          }
-        })
-        .whereType<PdfFileModel>()
-        .where((f) => File(f.path).existsSync())
-        .toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    _files =
+        raw
+            .map((s) {
+              try {
+                return PdfFileModel.fromJson(
+                  jsonDecode(s) as Map<String, dynamic>,
+                );
+              } catch (_) {
+                return null;
+              }
+            })
+            .whereType<PdfFileModel>()
+            .where((f) => File(f.path).existsSync())
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
   }
 
   Future<void> _saveFiles() async {
@@ -82,6 +92,13 @@ class AppProvider extends ChangeNotifier {
     _isPro = true;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_proKey, true);
+    notifyListeners();
+  }
+
+  Future<void> completeOnboarding() async {
+    _hasSeenOnboarding = true;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_onboardingSeenKey, true);
     notifyListeners();
   }
 

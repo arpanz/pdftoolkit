@@ -75,7 +75,7 @@ class _SignScreenState extends State<SignScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        barrierColor: Colors.black.withOpacity(0.7),
+        barrierColor: Colors.black.withValues(alpha: 0.7),
         builder: (_) => const ProcessingDialog(
           title: 'Signing PDF...',
           subtitle: 'Placing signature via Rust engine',
@@ -129,15 +129,18 @@ class _SignScreenState extends State<SignScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${result.error ?? "Unknown error"}')),
+            SnackBar(
+              content: Text('Error: ${result.error ?? "Unknown error"}'),
+            ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -147,12 +150,12 @@ class _SignScreenState extends State<SignScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: AppColors.backgroundFor(context),
       appBar: AppBar(
-        title: const Text('Sign PDF'),
-        backgroundColor: AppColors.bgDark,
+        title: Text('Sign PDF'),
+        backgroundColor: AppColors.backgroundFor(context),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
+          icon: Icon(Icons.arrow_back_ios_rounded),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -163,7 +166,7 @@ class _SignScreenState extends State<SignScreen> {
           children: [
             // PDF picker
             _SectionLabel(text: 'DOCUMENT'),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             GestureDetector(
               onTap: _pickPdf,
               child: _FileCard(
@@ -173,11 +176,11 @@ class _SignScreenState extends State<SignScreen> {
               ),
             ).animate().fadeIn().slideY(begin: 0.2),
 
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // Signature source
             _SectionLabel(text: 'SIGNATURE'),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
@@ -186,12 +189,12 @@ class _SignScreenState extends State<SignScreen> {
                     child: Container(
                       height: 90,
                       decoration: BoxDecoration(
-                        color: AppColors.bgCard,
+                        color: AppColors.cardFor(context),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: _sigImagePath != null
-                              ? AppColors.success.withOpacity(0.5)
-                              : AppColors.border,
+                              ? AppColors.success.withValues(alpha: 0.5)
+                              : AppColors.borderFor(context),
                         ),
                       ),
                       child: _sigImagePath != null
@@ -202,59 +205,80 @@ class _SignScreenState extends State<SignScreen> {
                                 fit: BoxFit.contain,
                               ),
                             )
-                          : const Column(
+                          : Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.add_photo_alternate_rounded,
-                                    color: AppColors.primary, size: 28),
+                                Icon(
+                                  Icons.add_photo_alternate_rounded,
+                                  color: AppColors.primary,
+                                  size: 28,
+                                ),
                                 SizedBox(height: 6),
-                                Text('Upload Signature Image',
-                                    style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 11),
-                                    textAlign: TextAlign.center),
+                                Text(
+                                  'Upload Signature Image',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondaryFor(context),
+                                    fontSize: 11,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
                               ],
                             ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
-                const Column(
+                SizedBox(width: 10),
+                Column(
                   children: [
-                    Text('OR', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                    Text(
+                      'OR',
+                      style: TextStyle(
+                        color: AppColors.textMutedFor(context),
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10),
                 Expanded(
                   child: Container(
                     height: 90,
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: AppColors.bgCard,
+                      color: AppColors.cardFor(context),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: _sigImagePath == null && _nameController.text.isNotEmpty
-                            ? AppColors.success.withOpacity(0.5)
-                            : AppColors.border,
+                        color:
+                            _sigImagePath == null &&
+                                _nameController.text.isNotEmpty
+                            ? AppColors.success.withValues(alpha: 0.5)
+                            : AppColors.borderFor(context),
                       ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Text Signature',
-                            style: TextStyle(
-                                color: AppColors.textMuted,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 6),
+                        Text(
+                          'Text Signature',
+                          style: TextStyle(
+                            color: AppColors.textMutedFor(context),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 6),
                         TextField(
                           controller: _nameController,
-                          style: const TextStyle(
-                              color: AppColors.textPrimary, fontSize: 13),
-                          decoration: const InputDecoration(
+                          style: TextStyle(
+                            color: AppColors.textPrimaryFor(context),
+                            fontSize: 13,
+                          ),
+                          decoration: InputDecoration(
                             hintText: 'Your name',
                             hintStyle: TextStyle(
-                                color: AppColors.textMuted, fontSize: 12),
+                              color: AppColors.textMutedFor(context),
+                              fontSize: 12,
+                            ),
                             border: InputBorder.none,
                             isDense: true,
                             contentPadding: EdgeInsets.zero,
@@ -268,36 +292,37 @@ class _SignScreenState extends State<SignScreen> {
               ],
             ).animate().fadeIn(delay: 100.ms),
 
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // Page number
-            if (_totalPages > 0) ...[  
+            if (_totalPages > 0) ...[
               _SectionLabel(text: 'PAGE NUMBER'),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Row(
                 children: [
                   IconButton(
                     onPressed: _pageNumber > 1
                         ? () => setState(() => _pageNumber--)
                         : null,
-                    icon: const Icon(Icons.remove_circle_outline_rounded),
+                    icon: Icon(Icons.remove_circle_outline_rounded),
                     color: AppColors.primary,
                   ),
                   Expanded(
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: AppColors.bgCard,
+                        color: AppColors.cardFor(context),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: AppColors.borderFor(context)),
                       ),
                       child: Text(
                         'Page $_pageNumber of $_totalPages',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          color: AppColors.textPrimaryFor(context),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
@@ -305,17 +330,17 @@ class _SignScreenState extends State<SignScreen> {
                     onPressed: _pageNumber < _totalPages
                         ? () => setState(() => _pageNumber++)
                         : null,
-                    icon: const Icon(Icons.add_circle_outline_rounded),
+                    icon: Icon(Icons.add_circle_outline_rounded),
                     color: AppColors.primary,
                   ),
                 ],
               ).animate().fadeIn(delay: 150.ms),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
             ],
 
             // Position controls
             _SectionLabel(text: 'PLACEMENT (POINTS FROM BOTTOM-LEFT)'),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Row(
               children: [
                 _NumberField(
@@ -323,19 +348,19 @@ class _SignScreenState extends State<SignScreen> {
                   value: _sigX,
                   onChanged: (v) => setState(() => _sigX = v),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 _NumberField(
                   label: 'Y',
                   value: _sigY,
                   onChanged: (v) => setState(() => _sigY = v),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 _NumberField(
                   label: 'W',
                   value: _sigW,
                   onChanged: (v) => setState(() => _sigW = v),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 _NumberField(
                   label: 'H',
                   value: _sigH,
@@ -344,7 +369,7 @@ class _SignScreenState extends State<SignScreen> {
               ],
             ).animate().fadeIn(delay: 200.ms),
 
-            const SizedBox(height: 32),
+            SizedBox(height: 32),
 
             GradientButton(
               label: 'Sign PDF',
@@ -352,7 +377,7 @@ class _SignScreenState extends State<SignScreen> {
               onPressed: (_pdfPath == null || _isProcessing) ? null : _sign,
               isLoading: _isProcessing,
             ).animate().fadeIn(delay: 250.ms),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
           ],
         ),
       ),
@@ -368,8 +393,8 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
-        color: AppColors.textSecondary,
+      style: TextStyle(
+        color: AppColors.textSecondaryFor(context),
         fontSize: 11,
         fontWeight: FontWeight.w700,
         letterSpacing: 1.2,
@@ -395,51 +420,65 @@ class _FileCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
+        color: AppColors.cardFor(context),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: path != null
-              ? AppColors.primary.withOpacity(0.4)
-              : AppColors.border,
+              ? AppColors.primary.withValues(alpha: 0.4)
+              : AppColors.borderFor(context),
         ),
       ),
       child: path == null
           ? Row(
               children: [
-                Icon(emptyIcon, color: AppColors.textMuted, size: 28),
-                const SizedBox(width: 12),
-                Text(emptyLabel,
-                    style: const TextStyle(
-                        color: AppColors.textSecondary, fontSize: 13)),
+                Icon(
+                  emptyIcon,
+                  color: AppColors.textMutedFor(context),
+                  size: 28,
+                ),
+                SizedBox(width: 12),
+                Text(
+                  emptyLabel,
+                  style: TextStyle(
+                    color: AppColors.textSecondaryFor(context),
+                    fontSize: 13,
+                  ),
+                ),
               ],
             )
           : Row(
               children: [
-                const Icon(Icons.picture_as_pdf_rounded,
-                    color: AppColors.error, size: 28),
-                const SizedBox(width: 12),
+                Icon(
+                  Icons.picture_as_pdf_rounded,
+                  color: AppColors.error,
+                  size: 28,
+                ),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         p.basename(path!),
-                        style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          color: AppColors.textPrimaryFor(context),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
                         '${(File(path!).lengthSync() / (1024 * 1024)).toStringAsFixed(2)} MB',
-                        style: const TextStyle(
-                            color: AppColors.textMuted, fontSize: 11),
+                        style: TextStyle(
+                          color: AppColors.textMutedFor(context),
+                          fontSize: 11,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.check_circle_rounded, color: AppColors.success),
+                Icon(Icons.check_circle_rounded, color: AppColors.success),
               ],
             ),
     );
@@ -463,29 +502,37 @@ class _NumberField extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: const TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600)),
-          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: AppColors.textMutedFor(context),
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 4),
           TextFormField(
             initialValue: value.toStringAsFixed(0),
             keyboardType: TextInputType.number,
-            style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+            style: TextStyle(
+              color: AppColors.textPrimaryFor(context),
+              fontSize: 13,
+            ),
             decoration: InputDecoration(
               isDense: true,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 10,
+              ),
               filled: true,
-              fillColor: AppColors.bgCard,
+              fillColor: AppColors.cardFor(context),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.border),
+                borderSide: BorderSide(color: AppColors.borderFor(context)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.border),
+                borderSide: BorderSide(color: AppColors.borderFor(context)),
               ),
             ),
             onChanged: (v) {

@@ -13,7 +13,6 @@ import '../../core/ffi/pdf_bridge.dart';
 import '../../shared/widgets/gradient_button.dart';
 import '../../shared/widgets/processing_dialog.dart';
 import '../../shared/widgets/success_screen.dart';
-import 'package:pdftoolkit/src/rust/api/pdf_ops.dart';
 
 class ProtectScreen extends StatefulWidget {
   const ProtectScreen({super.key});
@@ -102,7 +101,7 @@ class _ProtectScreenState extends State<ProtectScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        barrierColor: Colors.black.withOpacity(0.7),
+        barrierColor: Colors.black.withValues(alpha: 0.7),
         builder: (_) => const ProcessingDialog(
           title: 'Encrypting PDF via Rust Engine...',
           subtitle: 'Adding AES password protection',
@@ -172,12 +171,12 @@ class _ProtectScreenState extends State<ProtectScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: AppColors.backgroundFor(context),
       appBar: AppBar(
-        title: const Text('Protect PDF'),
-        backgroundColor: AppColors.bgDark,
+        title: Text('Protect PDF'),
+        backgroundColor: AppColors.backgroundFor(context),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
+          icon: Icon(Icons.arrow_back_ios_rounded),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -192,16 +191,16 @@ class _ProtectScreenState extends State<ProtectScreen> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    const Color(0xFF10B981).withOpacity(0.1),
-                    const Color(0xFF059669).withOpacity(0.05),
+                    const Color(0xFF10B981).withValues(alpha: 0.1),
+                    const Color(0xFF059669).withValues(alpha: 0.05),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: const Color(0xFF10B981).withOpacity(0.3),
+                  color: const Color(0xFF10B981).withValues(alpha: 0.3),
                 ),
               ),
-              child: const Row(
+              child: Row(
                 children: [
                   Icon(Icons.lock_rounded, color: Color(0xFF10B981), size: 28),
                   SizedBox(width: 12),
@@ -212,7 +211,7 @@ class _ProtectScreenState extends State<ProtectScreen> {
                         Text(
                           'AES Password Protection',
                           style: TextStyle(
-                            color: AppColors.textPrimary,
+                            color: AppColors.textPrimaryFor(context),
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                           ),
@@ -220,7 +219,7 @@ class _ProtectScreenState extends State<ProtectScreen> {
                         Text(
                           'Secure your PDF with a strong password',
                           style: TextStyle(
-                            color: AppColors.textSecondary,
+                            color: AppColors.textSecondaryFor(context),
                             fontSize: 12,
                           ),
                         ),
@@ -231,53 +230,50 @@ class _ProtectScreenState extends State<ProtectScreen> {
               ),
             ).animate().fadeIn().slideY(begin: 0.2),
 
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // File picker
-            const Text(
+            Text(
               'SELECT FILE',
               style: TextStyle(
-                color: AppColors.textSecondary,
+                color: AppColors.textSecondaryFor(context),
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 1.2,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             _FilePicker(
               selectedFile: _selectedFile,
               onPick: _pickFile,
             ).animate().fadeIn(delay: 100.ms),
 
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // Password fields
-            const Text(
+            Text(
               'SET PASSWORD',
               style: TextStyle(
-                color: AppColors.textSecondary,
+                color: AppColors.textSecondaryFor(context),
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 1.2,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             TextField(
               controller: _passwordController,
               obscureText: _obscurePassword,
-              style: const TextStyle(color: AppColors.textPrimary),
+              style: TextStyle(color: AppColors.textPrimaryFor(context)),
               decoration: InputDecoration(
                 hintText: 'Enter password',
-                prefixIcon: const Icon(
-                  Icons.key_rounded,
-                  color: AppColors.primary,
-                ),
+                prefixIcon: Icon(Icons.key_rounded, color: AppColors.primary),
                 suffixIcon: IconButton(
                   icon: Icon(
                     _obscurePassword
                         ? Icons.visibility_rounded
                         : Icons.visibility_off_rounded,
-                    color: AppColors.textMuted,
+                    color: AppColors.textMutedFor(context),
                   ),
                   onPressed: () =>
                       setState(() => _obscurePassword = !_obscurePassword),
@@ -285,24 +281,21 @@ class _ProtectScreenState extends State<ProtectScreen> {
               ),
             ).animate().fadeIn(delay: 200.ms),
 
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
 
             TextField(
               controller: _confirmController,
               obscureText: _obscureConfirm,
-              style: const TextStyle(color: AppColors.textPrimary),
+              style: TextStyle(color: AppColors.textPrimaryFor(context)),
               decoration: InputDecoration(
                 hintText: 'Confirm password',
-                prefixIcon: const Icon(
-                  Icons.key_rounded,
-                  color: AppColors.primary,
-                ),
+                prefixIcon: Icon(Icons.key_rounded, color: AppColors.primary),
                 suffixIcon: IconButton(
                   icon: Icon(
                     _obscureConfirm
                         ? Icons.visibility_rounded
                         : Icons.visibility_off_rounded,
-                    color: AppColors.textMuted,
+                    color: AppColors.textMutedFor(context),
                   ),
                   onPressed: () =>
                       setState(() => _obscureConfirm = !_obscureConfirm),
@@ -310,7 +303,7 @@ class _ProtectScreenState extends State<ProtectScreen> {
               ),
             ).animate().fadeIn(delay: 300.ms),
 
-            const SizedBox(height: 32),
+            SizedBox(height: 32),
 
             GradientButton(
               label: 'Protect PDF',
@@ -338,12 +331,12 @@ class _FilePicker extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.bgCard,
+          color: AppColors.cardFor(context),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: selectedFile != null
-                ? AppColors.primary.withOpacity(0.5)
-                : AppColors.border,
+                ? AppColors.primary.withValues(alpha: 0.5)
+                : AppColors.borderFor(context),
           ),
         ),
         child: Row(
@@ -353,8 +346,8 @@ class _FilePicker extends StatelessWidget {
               height: 44,
               decoration: BoxDecoration(
                 color: selectedFile != null
-                    ? AppColors.error.withOpacity(0.1)
-                    : AppColors.primary.withOpacity(0.1),
+                    ? AppColors.error.withValues(alpha: 0.1)
+                    : AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
@@ -366,7 +359,7 @@ class _FilePicker extends StatelessWidget {
                     : AppColors.primary,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Text(
                 selectedFile != null
@@ -374,8 +367,8 @@ class _FilePicker extends StatelessWidget {
                     : 'Tap to select PDF',
                 style: TextStyle(
                   color: selectedFile != null
-                      ? AppColors.textPrimary
-                      : AppColors.textMuted,
+                      ? AppColors.textPrimaryFor(context)
+                      : AppColors.textMutedFor(context),
                   fontSize: 14,
                   fontWeight: selectedFile != null
                       ? FontWeight.w600
@@ -389,7 +382,7 @@ class _FilePicker extends StatelessWidget {
               selectedFile != null
                   ? Icons.swap_horiz_rounded
                   : Icons.chevron_right_rounded,
-              color: AppColors.textMuted,
+              color: AppColors.textMutedFor(context),
             ),
           ],
         ),

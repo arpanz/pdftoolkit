@@ -1,33 +1,61 @@
 import 'dart:io';
 
-enum PdfOperation { merge, split, protect, unlock, imageToPdf, compress, sign, convert, pdfToImages }
+enum PdfOperation {
+  merge,
+  split,
+  protect,
+  unlock,
+  imageToPdf,
+  compress,
+  sign,
+  convert,
+  pdfToImages,
+}
 
 extension PdfOperationExt on PdfOperation {
   String get label {
     switch (this) {
-      case PdfOperation.merge: return 'Merged';
-      case PdfOperation.split: return 'Split';
-      case PdfOperation.protect: return 'Protected';
-      case PdfOperation.unlock: return 'Unlocked';
-      case PdfOperation.imageToPdf: return 'Image→PDF';
-      case PdfOperation.compress: return 'Compressed';
-      case PdfOperation.sign: return 'Signed';
-      case PdfOperation.convert: return 'Converted';
-      case PdfOperation.pdfToImages: return 'PDF→Images';
+      case PdfOperation.merge:
+        return 'Merged';
+      case PdfOperation.split:
+        return 'Split';
+      case PdfOperation.protect:
+        return 'Protected';
+      case PdfOperation.unlock:
+        return 'Unlocked';
+      case PdfOperation.imageToPdf:
+        return 'Image→PDF';
+      case PdfOperation.compress:
+        return 'Compressed';
+      case PdfOperation.sign:
+        return 'Signed';
+      case PdfOperation.convert:
+        return 'Converted';
+      case PdfOperation.pdfToImages:
+        return 'PDF→Images';
     }
   }
 
   String get icon {
     switch (this) {
-      case PdfOperation.merge: return '🔀';
-      case PdfOperation.split: return '✂️';
-      case PdfOperation.protect: return '🔒';
-      case PdfOperation.unlock: return '🔓';
-      case PdfOperation.imageToPdf: return '🖼️';
-      case PdfOperation.compress: return '🗜️';
-      case PdfOperation.sign: return '✍️';
-      case PdfOperation.convert: return '📄';
-      case PdfOperation.pdfToImages: return '🖼️';
+      case PdfOperation.merge:
+        return '🔀';
+      case PdfOperation.split:
+        return '✂️';
+      case PdfOperation.protect:
+        return '🔒';
+      case PdfOperation.unlock:
+        return '🔓';
+      case PdfOperation.imageToPdf:
+        return '🖼️';
+      case PdfOperation.compress:
+        return '🗜️';
+      case PdfOperation.sign:
+        return '✍️';
+      case PdfOperation.convert:
+        return '📄';
+      case PdfOperation.pdfToImages:
+        return '🖼️';
     }
   }
 }
@@ -57,7 +85,8 @@ class PdfFileModel {
 
   String get formattedSize {
     if (sizeBytes < 1024) return '${sizeBytes}B';
-    if (sizeBytes < 1024 * 1024) return '${(sizeBytes / 1024).toStringAsFixed(1)}KB';
+    if (sizeBytes < 1024 * 1024)
+      return '${(sizeBytes / 1024).toStringAsFixed(1)}KB';
     return '${sizeMb.toStringAsFixed(2)}MB';
   }
 

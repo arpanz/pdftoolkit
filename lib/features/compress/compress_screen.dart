@@ -58,7 +58,7 @@ class _CompressScreenState extends State<CompressScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        barrierColor: Colors.black.withOpacity(0.7),
+        barrierColor: Colors.black.withValues(alpha: 0.7),
         builder: (_) => const ProcessingDialog(
           title: 'Compressing PDF...',
           subtitle: 'Re-encoding images at target quality',
@@ -101,7 +101,8 @@ class _CompressScreenState extends State<CompressScreen> {
                 outputPath: result.outputPath,
                 pageCount: result.pageCount,
                 processingMs: result.processingMs,
-                operationLabel: 'Compress (${savings.toStringAsFixed(0)}% saved)',
+                operationLabel:
+                    'Compress (${savings.toStringAsFixed(0)}% saved)',
                 onDone: () => Navigator.of(context).popUntil((r) => r.isFirst),
               ),
             ),
@@ -110,15 +111,18 @@ class _CompressScreenState extends State<CompressScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${result.error ?? "Unknown error"}')),
+            SnackBar(
+              content: Text('Error: ${result.error ?? "Unknown error"}'),
+            ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -128,12 +132,12 @@ class _CompressScreenState extends State<CompressScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: AppColors.backgroundFor(context),
       appBar: AppBar(
-        title: const Text('Compress PDF'),
-        backgroundColor: AppColors.bgDark,
+        title: Text('Compress PDF'),
+        backgroundColor: AppColors.backgroundFor(context),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
+          icon: Icon(Icons.arrow_back_ios_rounded),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -149,12 +153,12 @@ class _CompressScreenState extends State<CompressScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColors.bgCard,
+                  color: AppColors.cardFor(context),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: _selectedPath != null
-                        ? AppColors.primary.withOpacity(0.5)
-                        : AppColors.border,
+                        ? AppColors.primary.withValues(alpha: 0.5)
+                        : AppColors.borderFor(context),
                   ),
                 ),
                 child: _selectedPath == null
@@ -164,25 +168,33 @@ class _CompressScreenState extends State<CompressScreen> {
                             width: 64,
                             height: 64,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF3B82F6).withOpacity(0.1),
+                              color: const Color(
+                                0xFF3B82F6,
+                              ).withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.compress_rounded,
-                                color: Color(0xFF3B82F6), size: 32),
+                            child: Icon(
+                              Icons.compress_rounded,
+                              color: Color(0xFF3B82F6),
+                              size: 32,
+                            ),
                           ),
-                          const SizedBox(height: 12),
-                          const Text(
+                          SizedBox(height: 12),
+                          Text(
                             'Tap to select a PDF',
                             style: TextStyle(
-                              color: AppColors.textPrimary,
+                              color: AppColors.textPrimaryFor(context),
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          const Text(
+                          SizedBox(height: 4),
+                          Text(
                             'Images inside the PDF will be re-encoded',
-                            style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                            style: TextStyle(
+                              color: AppColors.textMutedFor(context),
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       )
@@ -192,21 +204,23 @@ class _CompressScreenState extends State<CompressScreen> {
                             width: 48,
                             height: 48,
                             decoration: BoxDecoration(
-                              color: AppColors.error.withOpacity(0.1),
+                              color: AppColors.error.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(Icons.picture_as_pdf_rounded,
-                                color: AppColors.error),
+                            child: Icon(
+                              Icons.picture_as_pdf_rounded,
+                              color: AppColors.error,
+                            ),
                           ),
-                          const SizedBox(width: 14),
+                          SizedBox(width: 14),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   p.basename(_selectedPath!),
-                                  style: const TextStyle(
-                                    color: AppColors.textPrimary,
+                                  style: TextStyle(
+                                    color: AppColors.textPrimaryFor(context),
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -215,29 +229,33 @@ class _CompressScreenState extends State<CompressScreen> {
                                 ),
                                 Text(
                                   '${(File(_selectedPath!).lengthSync() / (1024 * 1024)).toStringAsFixed(2)} MB',
-                                  style: const TextStyle(
-                                      color: AppColors.textMuted, fontSize: 11),
+                                  style: TextStyle(
+                                    color: AppColors.textMutedFor(context),
+                                    fontSize: 11,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
-                          const Icon(Icons.check_circle_rounded,
-                              color: AppColors.success),
+                          Icon(
+                            Icons.check_circle_rounded,
+                            color: AppColors.success,
+                          ),
                         ],
                       ),
               ),
             ).animate().fadeIn().slideY(begin: 0.2),
 
-            const SizedBox(height: 28),
+            SizedBox(height: 28),
 
             // Quality slider
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'IMAGE QUALITY',
                   style: TextStyle(
-                    color: AppColors.textSecondary,
+                    color: AppColors.textSecondaryFor(context),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.2,
@@ -245,9 +263,12 @@ class _CompressScreenState extends State<CompressScreen> {
                 ),
                 AnimatedContainer(
                   duration: 200.ms,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: _qualityColor.withOpacity(0.15),
+                    color: _qualityColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -261,13 +282,13 @@ class _CompressScreenState extends State<CompressScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             SliderTheme(
               data: SliderTheme.of(context).copyWith(
                 activeTrackColor: _qualityColor,
                 thumbColor: _qualityColor,
-                inactiveTrackColor: AppColors.border,
-                overlayColor: _qualityColor.withOpacity(0.2),
+                inactiveTrackColor: AppColors.borderFor(context),
+                overlayColor: _qualityColor.withValues(alpha: 0.2),
                 trackHeight: 4,
               ),
               child: Slider(
@@ -282,24 +303,47 @@ class _CompressScreenState extends State<CompressScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Max Compress', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
-                Text('Quality: $_quality%',
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
-                const Text('Best Quality', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                Text(
+                  'Max Compress',
+                  style: TextStyle(
+                    color: AppColors.textMutedFor(context),
+                    fontSize: 10,
+                  ),
+                ),
+                Text(
+                  'Quality: $_quality%',
+                  style: TextStyle(
+                    color: AppColors.textSecondaryFor(context),
+                    fontSize: 11,
+                  ),
+                ),
+                Text(
+                  'Best Quality',
+                  style: TextStyle(
+                    color: AppColors.textMutedFor(context),
+                    fontSize: 10,
+                  ),
+                ),
               ],
             ),
 
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF3B82F6).withOpacity(0.08),
+                color: const Color(0xFF3B82F6).withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.2)),
+                border: Border.all(
+                  color: const Color(0xFF3B82F6).withValues(alpha: 0.2),
+                ),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.info_outline_rounded, color: Color(0xFF3B82F6), size: 16),
+                  Icon(
+                    Icons.info_outline_rounded,
+                    color: Color(0xFF3B82F6),
+                    size: 16,
+                  ),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -316,10 +360,12 @@ class _CompressScreenState extends State<CompressScreen> {
             GradientButton(
               label: 'Compress PDF',
               icon: Icons.compress_rounded,
-              onPressed: (_selectedPath == null || _isProcessing) ? null : _compress,
+              onPressed: (_selectedPath == null || _isProcessing)
+                  ? null
+                  : _compress,
               isLoading: _isProcessing,
             ).animate().fadeIn(delay: 200.ms),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
           ],
         ),
       ),

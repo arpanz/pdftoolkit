@@ -72,7 +72,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        barrierColor: Colors.black.withOpacity(0.7),
+        barrierColor: Colors.black.withValues(alpha: 0.7),
         builder: (_) => ProcessingDialog(
           title:
               'Converting ${_selectedImages.length} Image${_selectedImages.length == 1 ? '' : 's'}...',
@@ -143,20 +143,20 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: AppColors.backgroundFor(context),
       appBar: AppBar(
-        title: const Text('Image → PDF'),
-        backgroundColor: AppColors.bgDark,
+        title: Text('Image → PDF'),
+        backgroundColor: AppColors.backgroundFor(context),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
+          icon: Icon(Icons.arrow_back_ios_rounded),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           if (_selectedImages.isNotEmpty)
             TextButton.icon(
               onPressed: _pickImages,
-              icon: const Icon(Icons.add_photo_alternate_rounded, size: 18),
-              label: const Text('Add'),
+              icon: Icon(Icons.add_photo_alternate_rounded, size: 18),
+              label: Text('Add'),
               style: TextButton.styleFrom(foregroundColor: AppColors.primary),
             ),
         ],
@@ -182,9 +182,11 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
           if (_selectedImages.isNotEmpty)
             Container(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-              decoration: const BoxDecoration(
-                color: AppColors.bgCard,
-                border: Border(top: BorderSide(color: AppColors.border)),
+              decoration: BoxDecoration(
+                color: AppColors.cardFor(context),
+                border: Border(
+                  top: BorderSide(color: AppColors.borderFor(context)),
+                ),
               ),
               child: GradientButton(
                 label:
@@ -215,31 +217,34 @@ class _EmptyState extends StatelessWidget {
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: const Color(0xFFEF4444).withOpacity(0.1),
+              color: const Color(0xFFEF4444).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.image_rounded,
               color: Color(0xFFEF4444),
               size: 48,
             ),
           ).animate().scale(duration: 400.ms, curve: Curves.elasticOut),
-          const SizedBox(height: 24),
-          const Text(
+          SizedBox(height: 24),
+          Text(
             'Select Images',
             style: TextStyle(
-              color: AppColors.textPrimary,
+              color: AppColors.textPrimaryFor(context),
               fontSize: 20,
               fontWeight: FontWeight.w700,
             ),
           ).animate().fadeIn(delay: 100.ms),
-          const SizedBox(height: 8),
-          const Text(
+          SizedBox(height: 8),
+          Text(
             'Pick images from your gallery.\nThey\'ll be combined into a single PDF.',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            style: TextStyle(
+              color: AppColors.textSecondaryFor(context),
+              fontSize: 14,
+            ),
             textAlign: TextAlign.center,
           ).animate().fadeIn(delay: 200.ms),
-          const SizedBox(height: 32),
+          SizedBox(height: 32),
           GradientButton(
             label: 'Pick Images',
             icon: Icons.add_photo_alternate_rounded,
@@ -273,21 +278,24 @@ class _ImageGrid extends StatelessWidget {
             children: [
               Text(
                 '${images.length} image${images.length == 1 ? '' : 's'} selected',
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
+                style: TextStyle(
+                  color: AppColors.textSecondaryFor(context),
                   fontSize: 13,
                 ),
               ),
               const Spacer(),
-              const Icon(
+              Icon(
                 Icons.drag_indicator_rounded,
-                color: AppColors.textMuted,
+                color: AppColors.textMutedFor(context),
                 size: 14,
               ),
-              const SizedBox(width: 4),
-              const Text(
+              SizedBox(width: 4),
+              Text(
                 'Drag to reorder',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                style: TextStyle(
+                  color: AppColors.textMutedFor(context),
+                  fontSize: 11,
+                ),
               ),
             ],
           ),
@@ -308,22 +316,19 @@ class _ImageGrid extends StatelessWidget {
                   padding: const EdgeInsets.only(right: 20),
                   margin: const EdgeInsets.only(bottom: 10),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.15),
+                    color: AppColors.error.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(
-                    Icons.delete_rounded,
-                    color: AppColors.error,
-                  ),
+                  child: Icon(Icons.delete_rounded, color: AppColors.error),
                 ),
                 child: Container(
                   key: ValueKey('img_$path'),
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.bgCard,
+                    color: AppColors.cardFor(context),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: AppColors.borderFor(context)),
                   ),
                   child: Row(
                     children: [
@@ -332,13 +337,15 @@ class _ImageGrid extends StatelessWidget {
                         width: 28,
                         height: 28,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEF4444).withOpacity(0.15),
+                          color: const Color(
+                            0xFFEF4444,
+                          ).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Center(
                           child: Text(
                             '${index + 1}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Color(0xFFEF4444),
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -346,7 +353,7 @@ class _ImageGrid extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
 
                       // Thumbnail
                       ClipRRect(
@@ -360,14 +367,14 @@ class _ImageGrid extends StatelessWidget {
                             width: 52,
                             height: 52,
                             color: AppColors.bgSurface,
-                            child: const Icon(
+                            child: Icon(
                               Icons.broken_image_rounded,
-                              color: AppColors.textMuted,
+                              color: AppColors.textMutedFor(context),
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
 
                       // File info
                       Expanded(
@@ -376,8 +383,8 @@ class _ImageGrid extends StatelessWidget {
                           children: [
                             Text(
                               p.basename(path),
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
+                              style: TextStyle(
+                                color: AppColors.textPrimaryFor(context),
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -386,8 +393,8 @@ class _ImageGrid extends StatelessWidget {
                             ),
                             Text(
                               '${(File(path).lengthSync() / (1024 * 1024)).toStringAsFixed(2)} MB',
-                              style: const TextStyle(
-                                color: AppColors.textMuted,
+                              style: TextStyle(
+                                color: AppColors.textMutedFor(context),
                                 fontSize: 11,
                               ),
                             ),
@@ -395,9 +402,9 @@ class _ImageGrid extends StatelessWidget {
                         ),
                       ),
 
-                      const Icon(
+                      Icon(
                         Icons.drag_indicator_rounded,
-                        color: AppColors.textMuted,
+                        color: AppColors.textMutedFor(context),
                         size: 20,
                       ),
                     ],

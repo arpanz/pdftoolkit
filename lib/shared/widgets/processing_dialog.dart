@@ -20,7 +20,7 @@ class ProcessingDialog extends StatefulWidget {
     return showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.7),
+      barrierColor: Colors.black.withValues(alpha: 0.7),
       builder: (_) => ProcessingDialog(
         title: title ?? 'Executing via Rust Engine...',
         subtitle: subtitle ?? 'Processing your PDF at native speed',
@@ -53,18 +53,26 @@ class _ProcessingDialogState extends State<ProcessingDialog>
 
   @override
   Widget build(BuildContext context) {
+    final card = AppColors.cardFor(context);
+    final border = AppColors.borderFor(context);
+    final textPrimary = AppColors.textPrimaryFor(context);
+    final textSecondary = AppColors.textSecondaryFor(context);
+    final surface = Theme.of(context).brightness == Brightness.dark
+        ? AppColors.bgSurface
+        : AppColors.bgSurfaceLight;
+
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
       child: Container(
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: AppColors.bgCard,
+          color: card,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: border),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.15),
+              color: AppColors.primary.withValues(alpha: 0.15),
               blurRadius: 40,
               spreadRadius: 5,
             ),
@@ -73,7 +81,6 @@ class _ProcessingDialogState extends State<ProcessingDialog>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Rust logo / animated icon
             Container(
                   width: 72,
                   height: 72,
@@ -86,13 +93,13 @@ class _ProcessingDialogState extends State<ProcessingDialog>
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.4),
+                        color: AppColors.primary.withValues(alpha: 0.4),
                         blurRadius: 20,
                         spreadRadius: 2,
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.bolt_rounded,
                     color: Colors.white,
                     size: 36,
@@ -101,44 +108,35 @@ class _ProcessingDialogState extends State<ProcessingDialog>
                 .animate(onPlay: (c) => c.repeat())
                 .shimmer(
                   duration: 1500.ms,
-                  color: Colors.white.withOpacity(0.3),
+                  color: Colors.white.withValues(alpha: 0.3),
                 ),
-            const SizedBox(height: 24),
-
-            // Title
+            SizedBox(height: 24),
             Text(
               widget.title,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: textPrimary,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
-
-            // Subtitle
+            SizedBox(height: 8),
             Text(
               widget.subtitle,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 13,
-              ),
+              style: TextStyle(color: textSecondary, fontSize: 13),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 28),
-
-            // Animated progress bar
-            _RustProgressBar(controller: _controller),
-            const SizedBox(height: 16),
-
-            // Rust badge
+            SizedBox(height: 28),
+            _RustProgressBar(controller: _controller, trackColor: surface),
+            SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -146,7 +144,7 @@ class _ProcessingDialogState extends State<ProcessingDialog>
                   Container(
                         width: 8,
                         height: 8,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: AppColors.success,
                           shape: BoxShape.circle,
                         ),
@@ -155,9 +153,9 @@ class _ProcessingDialogState extends State<ProcessingDialog>
                       .fadeIn(duration: 600.ms)
                       .then()
                       .fadeOut(duration: 600.ms),
-                  const SizedBox(width: 8),
-                  const Text(
-                    '🦀 Rust Engine Active',
+                  SizedBox(width: 8),
+                  Text(
+                    'Rust Engine Active',
                     style: TextStyle(
                       color: AppColors.primary,
                       fontSize: 12,
@@ -176,8 +174,9 @@ class _ProcessingDialogState extends State<ProcessingDialog>
 
 class _RustProgressBar extends StatelessWidget {
   final AnimationController controller;
+  final Color trackColor;
 
-  const _RustProgressBar({required this.controller});
+  const _RustProgressBar({required this.controller, required this.trackColor});
 
   @override
   Widget build(BuildContext context) {
@@ -188,7 +187,7 @@ class _RustProgressBar extends StatelessWidget {
           height: 4,
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AppColors.bgSurface,
+            color: trackColor,
             borderRadius: BorderRadius.circular(2),
           ),
           child: FractionallySizedBox(
@@ -202,7 +201,7 @@ class _RustProgressBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.5),
+                    color: AppColors.primary.withValues(alpha: 0.5),
                     blurRadius: 6,
                   ),
                 ],

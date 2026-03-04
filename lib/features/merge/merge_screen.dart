@@ -79,7 +79,7 @@ class _MergeScreenState extends State<MergeScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        barrierColor: Colors.black.withOpacity(0.7),
+        barrierColor: Colors.black.withValues(alpha: 0.7),
         builder: (_) => const ProcessingDialog(
           title: 'Merging PDFs via Rust Engine...',
           subtitle: 'Combining your files at native speed',
@@ -150,28 +150,28 @@ class _MergeScreenState extends State<MergeScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.bgCard,
+        backgroundColor: AppColors.cardFor(context),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
             Icon(Icons.workspace_premium_rounded, color: Color(0xFFF59E0B)),
             SizedBox(width: 8),
             Text(
               'Upgrade to Pro',
-              style: TextStyle(color: AppColors.textPrimary),
+              style: TextStyle(color: AppColors.textPrimaryFor(context)),
             ),
           ],
         ),
         content: Text(
           message,
-          style: const TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: AppColors.textSecondaryFor(context)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(color: AppColors.textMuted),
+              style: TextStyle(color: AppColors.textMutedFor(context)),
             ),
           ),
           ElevatedButton(
@@ -182,7 +182,7 @@ class _MergeScreenState extends State<MergeScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFF59E0B),
             ),
-            child: const Text('Upgrade — \$3.50'),
+            child: Text('Upgrade — \$3.50'),
           ),
         ],
       ),
@@ -196,12 +196,12 @@ class _MergeScreenState extends State<MergeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: AppColors.backgroundFor(context),
       appBar: AppBar(
-        title: const Text('Merge PDFs'),
-        backgroundColor: AppColors.bgDark,
+        title: Text('Merge PDFs'),
+        backgroundColor: AppColors.backgroundFor(context),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
+          icon: Icon(Icons.arrow_back_ios_rounded),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -252,31 +252,34 @@ class _EmptyState extends StatelessWidget {
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.merge_type_rounded,
               color: AppColors.primary,
               size: 48,
             ),
           ).animate().scale(duration: 400.ms, curve: Curves.elasticOut),
-          const SizedBox(height: 24),
-          const Text(
+          SizedBox(height: 24),
+          Text(
             'Select PDFs to Merge',
             style: TextStyle(
-              color: AppColors.textPrimary,
+              color: AppColors.textPrimaryFor(context),
               fontSize: 20,
               fontWeight: FontWeight.w700,
             ),
           ).animate().fadeIn(delay: 100.ms),
-          const SizedBox(height: 8),
-          const Text(
+          SizedBox(height: 8),
+          Text(
             'Tap below to pick your PDF files.\nDrag to reorder before merging.',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            style: TextStyle(
+              color: AppColors.textSecondaryFor(context),
+              fontSize: 14,
+            ),
             textAlign: TextAlign.center,
           ).animate().fadeIn(delay: 200.ms),
-          const SizedBox(height: 32),
+          SizedBox(height: 32),
           GradientButton(
             label: 'Pick PDF Files',
             icon: Icons.add_rounded,
@@ -312,16 +315,16 @@ class _FileList extends StatelessWidget {
             children: [
               Text(
                 '${files.length} file${files.length == 1 ? '' : 's'} selected',
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
+                style: TextStyle(
+                  color: AppColors.textSecondaryFor(context),
                   fontSize: 13,
                 ),
               ),
               const Spacer(),
               TextButton.icon(
                 onPressed: onAddMore,
-                icon: const Icon(Icons.add_rounded, size: 16),
-                label: const Text('Add More'),
+                icon: Icon(Icons.add_rounded, size: 16),
+                label: Text('Add More'),
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(
@@ -333,24 +336,27 @@ class _FileList extends StatelessWidget {
             ],
           ),
         ),
-        const Padding(
+        Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
               Icon(
                 Icons.drag_indicator_rounded,
-                color: AppColors.textMuted,
+                color: AppColors.textMutedFor(context),
                 size: 14,
               ),
               SizedBox(width: 4),
               Text(
                 'Drag to reorder • Swipe left to remove',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                style: TextStyle(
+                  color: AppColors.textMutedFor(context),
+                  fontSize: 11,
+                ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         Expanded(
           child: ReorderableListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -384,22 +390,19 @@ class _FileList extends StatelessWidget {
                   padding: const EdgeInsets.only(right: 20),
                   margin: const EdgeInsets.only(bottom: 10),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.15),
+                    color: AppColors.error.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(
-                    Icons.delete_rounded,
-                    color: AppColors.error,
-                  ),
+                  child: Icon(Icons.delete_rounded, color: AppColors.error),
                 ),
                 child: Container(
                   key: ValueKey('item_$path'),
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppColors.bgCard,
+                    color: AppColors.cardFor(context),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: AppColors.borderFor(context)),
                   ),
                   child: Row(
                     children: [
@@ -408,13 +411,13 @@ class _FileList extends StatelessWidget {
                         width: 28,
                         height: 28,
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.15),
+                          color: AppColors.primary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Center(
                           child: Text(
                             '${index + 1}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.primary,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -422,23 +425,23 @@ class _FileList extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
 
                       // PDF icon
                       Container(
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: AppColors.error.withOpacity(0.1),
+                          color: AppColors.error.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.picture_as_pdf_rounded,
                           color: AppColors.error,
                           size: 20,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
 
                       // File info
                       Expanded(
@@ -447,8 +450,8 @@ class _FileList extends StatelessWidget {
                           children: [
                             Text(
                               name,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
+                              style: TextStyle(
+                                color: AppColors.textPrimaryFor(context),
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -457,8 +460,8 @@ class _FileList extends StatelessWidget {
                             ),
                             Text(
                               '${size.toStringAsFixed(2)} MB',
-                              style: const TextStyle(
-                                color: AppColors.textMuted,
+                              style: TextStyle(
+                                color: AppColors.textMutedFor(context),
                                 fontSize: 11,
                               ),
                             ),
@@ -467,9 +470,9 @@ class _FileList extends StatelessWidget {
                       ),
 
                       // Drag handle
-                      const Icon(
+                      Icon(
                         Icons.drag_indicator_rounded,
-                        color: AppColors.textMuted,
+                        color: AppColors.textMutedFor(context),
                         size: 20,
                       ),
                     ],
@@ -500,8 +503,8 @@ class _BottomBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        border: const Border(top: BorderSide(color: AppColors.border)),
+        color: AppColors.cardFor(context),
+        border: Border(top: BorderSide(color: AppColors.borderFor(context))),
       ),
       child: GradientButton(
         label: 'Merge $fileCount File${fileCount == 1 ? '' : 's'}',

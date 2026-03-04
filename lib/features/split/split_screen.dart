@@ -133,7 +133,7 @@ class _SplitScreenState extends State<SplitScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        barrierColor: Colors.black.withOpacity(0.7),
+        barrierColor: Colors.black.withValues(alpha: 0.7),
         builder: (_) => const ProcessingDialog(
           title: 'Splitting PDF via Rust Engine...',
           subtitle: 'Extracting your pages at native speed',
@@ -205,26 +205,26 @@ class _SplitScreenState extends State<SplitScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.bgCard,
-        title: const Text(
+        backgroundColor: AppColors.cardFor(context),
+        title: Text(
           'Upgrade to Pro',
-          style: TextStyle(color: AppColors.textPrimary),
+          style: TextStyle(color: AppColors.textPrimaryFor(context)),
         ),
         content: Text(
           message,
-          style: const TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: AppColors.textSecondaryFor(context)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
               context.read<AppProvider>().unlockPro();
             },
-            child: const Text('Upgrade — \$3.50'),
+            child: Text('Upgrade — \$3.50'),
           ),
         ],
       ),
@@ -234,12 +234,12 @@ class _SplitScreenState extends State<SplitScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: AppColors.backgroundFor(context),
       appBar: AppBar(
-        title: const Text('Split PDF'),
-        backgroundColor: AppColors.bgDark,
+        title: Text('Split PDF'),
+        backgroundColor: AppColors.backgroundFor(context),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
+          icon: Icon(Icons.arrow_back_ios_rounded),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -255,39 +255,41 @@ class _SplitScreenState extends State<SplitScreen> {
               onPick: _pickFile,
             ).animate().fadeIn().slideY(begin: 0.2),
 
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // Page range input
             if (_selectedFile != null) ...[
-              const Text(
+              Text(
                 'PAGE RANGE',
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: AppColors.textSecondaryFor(context),
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1.2,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               TextField(
                 controller: _rangeController,
-                style: const TextStyle(color: AppColors.textPrimary),
+                style: TextStyle(color: AppColors.textPrimaryFor(context)),
                 decoration: InputDecoration(
                   hintText: 'e.g., 1-5, 9, 12-15',
-                  hintStyle: const TextStyle(color: AppColors.textMuted),
-                  prefixIcon: const Icon(
+                  hintStyle: TextStyle(color: AppColors.textMutedFor(context)),
+                  prefixIcon: Icon(
                     Icons.content_cut_rounded,
                     color: AppColors.primary,
                   ),
                   helperText: _totalPages > 0
                       ? 'This PDF has $_totalPages pages'
                       : null,
-                  helperStyle: const TextStyle(color: AppColors.textMuted),
+                  helperStyle: TextStyle(
+                    color: AppColors.textMutedFor(context),
+                  ),
                 ),
                 keyboardType: TextInputType.text,
               ).animate().fadeIn(delay: 100.ms),
 
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
 
               // Quick range chips
               if (_totalPages > 0)
@@ -322,7 +324,7 @@ class _SplitScreenState extends State<SplitScreen> {
                 isLoading: _isProcessing,
               ).animate().fadeIn(delay: 300.ms),
 
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
           ],
         ),
       ),
@@ -348,12 +350,12 @@ class _FilePicker extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppColors.bgCard,
+          color: AppColors.cardFor(context),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selectedFile != null
-                ? AppColors.primary.withOpacity(0.5)
-                : AppColors.border,
+                ? AppColors.primary.withValues(alpha: 0.5)
+                : AppColors.borderFor(context),
           ),
         ),
         child: selectedFile == null
@@ -363,22 +365,22 @@ class _FilePicker extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.upload_file_rounded,
                       color: AppColors.primary,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  const Column(
+                  SizedBox(width: 16),
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Select PDF File',
                         style: TextStyle(
-                          color: AppColors.textPrimary,
+                          color: AppColors.textPrimaryFor(context),
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                         ),
@@ -386,7 +388,7 @@ class _FilePicker extends StatelessWidget {
                       Text(
                         'Tap to browse your files',
                         style: TextStyle(
-                          color: AppColors.textMuted,
+                          color: AppColors.textMutedFor(context),
                           fontSize: 12,
                         ),
                       ),
@@ -400,23 +402,23 @@ class _FilePicker extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.1),
+                      color: AppColors.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.picture_as_pdf_rounded,
                       color: AppColors.error,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           p.basename(selectedFile!),
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
+                          style: TextStyle(
+                            color: AppColors.textPrimaryFor(context),
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -425,15 +427,15 @@ class _FilePicker extends StatelessWidget {
                         ),
                         Text(
                           totalPages > 0 ? '$totalPages pages' : 'Loading...',
-                          style: const TextStyle(
-                            color: AppColors.textMuted,
+                          style: TextStyle(
+                            color: AppColors.textMutedFor(context),
                             fontSize: 12,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(
+                  Icon(
                     Icons.swap_horiz_rounded,
                     color: AppColors.primary,
                     size: 20,
@@ -458,13 +460,13 @@ class _RangeChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
+          color: AppColors.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
         ),
         child: Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.primary,
             fontSize: 12,
             fontWeight: FontWeight.w500,

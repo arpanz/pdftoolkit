@@ -1,13 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum ColorTheme {
-  classic,
-  lavender,
-  amber,
-  coral,
-  forest,
-  chrome,
-}
+enum ColorTheme { classic, lavender, amber, coral, forest, chrome }
 
 class ColorSchemeData {
   final String name;
@@ -43,7 +36,7 @@ class AppColorSchemes {
       error: Color(0xFFEF4444),
       icon: Icons.water_drop_rounded,
     ),
-    
+
     ColorTheme.lavender: ColorSchemeData(
       name: 'Digital Lavender',
       description: 'Calm tech vibe',
@@ -54,7 +47,7 @@ class AppColorSchemes {
       error: Color(0xFFFB7185),
       icon: Icons.spa_rounded,
     ),
-    
+
     ColorTheme.amber: ColorSchemeData(
       name: 'Burnished Amber',
       description: 'Premium & bold',
@@ -65,7 +58,7 @@ class AppColorSchemes {
       error: Color(0xFFDC2626),
       icon: Icons.local_fire_department_rounded,
     ),
-    
+
     ColorTheme.coral: ColorSchemeData(
       name: 'Electric Coral',
       description: 'Energetic & modern',
@@ -76,7 +69,7 @@ class AppColorSchemes {
       error: Color(0xFFF43F5E),
       icon: Icons.flash_on_rounded,
     ),
-    
+
     ColorTheme.forest: ColorSchemeData(
       name: 'Forest Green',
       description: 'Earthy premium',
@@ -87,7 +80,7 @@ class AppColorSchemes {
       error: Color(0xFFDC2626),
       icon: Icons.forest_rounded,
     ),
-    
+
     ColorTheme.chrome: ColorSchemeData(
       name: 'Liquid Chrome',
       description: 'Futuristic',
