@@ -144,6 +144,159 @@ class _ToolSection {
   const _ToolSection({required this.label, required this.tools});
 }
 
+class _ToolSearchResult {
+  final String section;
+  final _Tool tool;
+
+  const _ToolSearchResult({required this.section, required this.tool});
+}
+
+class _ToolSearchDelegate extends SearchDelegate<_ToolSearchResult?> {
+  final List<_ToolSearchResult> items;
+  final bool isPro;
+
+  _ToolSearchDelegate({required this.items, required this.isPro});
+
+  @override
+  String get searchFieldLabel => 'Search features';
+
+  List<_ToolSearchResult> _filtered() {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return items;
+    return items.where((item) {
+      return item.tool.title.toLowerCase().contains(q) ||
+          item.section.toLowerCase().contains(q);
+    }).toList();
+  }
+
+  @override
+  List<Widget>? buildActions(BuildContext context) {
+    if (query.isEmpty) return null;
+    return [
+      IconButton(
+        onPressed: () => query = '',
+        icon: const Icon(Icons.close_rounded),
+      ),
+    ];
+  }
+
+  @override
+  Widget? buildLeading(BuildContext context) {
+    return IconButton(
+      onPressed: () => close(context, null),
+      icon: const Icon(Icons.arrow_back_rounded),
+    );
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) => _buildList(context);
+
+  @override
+  Widget buildResults(BuildContext context) => _buildList(context);
+
+  Widget _buildList(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final matches = _filtered();
+
+    if (matches.isEmpty) {
+      return Center(
+        child: Text(
+          'No matching feature',
+          style: TextStyle(
+            color: isDark
+                ? AppColors.textMutedFor(context)
+                : AppColors.textMutedLight,
+            fontSize: 13,
+          ),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 18),
+      itemCount: matches.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        final item = matches[index];
+        final locked = item.tool.isPro && !isPro;
+        final tileBg = isDark ? AppColors.bgCard : AppColors.bgCardLight;
+        final tileBorder = isDark
+            ? AppColors.borderFor(context)
+            : AppColors.borderLightMode;
+        final titleColor = locked
+            ? (isDark
+                  ? AppColors.textSecondaryFor(context)
+                  : AppColors.textSecondaryLight)
+            : (isDark
+                  ? AppColors.textPrimaryFor(context)
+                  : AppColors.textPrimaryLight);
+        final subtitleColor = isDark
+            ? AppColors.textMutedFor(context)
+            : AppColors.textMutedLight;
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => close(context, item),
+            child: Ink(
+              decoration: BoxDecoration(
+                color: tileBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: tileBorder),
+              ),
+              child: ListTile(
+                leading: Icon(
+                  item.tool.icon,
+                  color: locked
+                      ? AppColors.warning.withValues(alpha: 0.55)
+                      : Theme.of(context).colorScheme.primary,
+                ),
+                title: Text(
+                  item.tool.title,
+                  style: TextStyle(
+                    color: titleColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Text(
+                  item.section,
+                  style: TextStyle(color: subtitleColor, fontSize: 12),
+                ),
+                trailing: locked
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.warning.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppColors.warning.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: const Text(
+                          'PRO',
+                          style: TextStyle(
+                            color: AppColors.warning,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                      )
+                    : const Icon(Icons.arrow_forward_rounded, size: 18),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 // ── Screen ───────────────────────────────────────────────────────────────────
 class WorkspaceScreen extends StatelessWidget {
   const WorkspaceScreen({super.key});
@@ -184,74 +337,76 @@ class WorkspaceScreen extends StatelessWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Theme.of(context).colorScheme.primary,
-                                Theme.of(context).colorScheme.secondary,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.picture_as_pdf_rounded,
-                            color: Colors.white,
-                            size: 22,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'BatchPDF',
-                                style: TextStyle(
-                                  color: textPri,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.8,
-                                  height: 1,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Offline · Private · Powered by Rust 🦀',
-                                style: TextStyle(
-                                  color: textMut,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                ),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'BatchPDF',
+                                    style: TextStyle(
+                                      color: textPri,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -0.8,
+                                      height: 1,
+                                    ),
+                                  ),
+                                  if (isPro) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(
+                                          0xFFF59E0B,
+                                        ).withValues(alpha: 0.14),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: const Color(
+                                            0xFFF59E0B,
+                                          ).withValues(alpha: 0.35),
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        'PRO',
+                                        style: TextStyle(
+                                          color: Color(0xFFF59E0B),
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ],
                           ),
                         ),
-                        GestureDetector(
+                        _HeaderActionButton(
+                          icon: Icons.search_rounded,
+                          color: textSec,
+                          backgroundColor: cardCol,
+                          borderColor: borderCol,
+                          onTap: () => _openToolSearch(context, isPro),
+                        ),
+                        const SizedBox(width: 10),
+                        _HeaderActionButton(
+                          icon: isDark
+                              ? Icons.light_mode_rounded
+                              : Icons.dark_mode_rounded,
+                          color: textSec,
+                          backgroundColor: cardCol,
+                          borderColor: borderCol,
                           onTap: () {
                             HapticFeedback.lightImpact();
                             context.read<AppProvider>().toggleDarkMode();
                           },
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: cardCol,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: borderCol),
-                            ),
-                            child: Icon(
-                              isDark
-                                  ? Icons.light_mode_rounded
-                                  : Icons.dark_mode_rounded,
-                              color: textSec,
-                              size: 18,
-                            ),
-                          ),
                         ),
                       ],
                     ),
@@ -259,28 +414,6 @@ class WorkspaceScreen extends StatelessWidget {
                     if (!isPro) ...[
                       const SizedBox(height: 20),
                       _ProBanner(onTap: () => _showProPaywall(context)),
-                    ],
-
-                    if (isPro) ...[
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.verified_rounded,
-                            color: AppColors.success,
-                            size: 14,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Pro Active — unlimited & no watermarks',
-                            style: TextStyle(
-                              color: AppColors.success,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
                     ],
                   ],
                 ),
@@ -312,6 +445,22 @@ class WorkspaceScreen extends StatelessWidget {
                 }, childCount: _sections.length),
               ),
             ),
+
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
+                child: Center(
+                  child: Text(
+                    'Offline · Private · Powered by Rust 🦀',
+                    style: TextStyle(
+                      color: textMut,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -323,6 +472,28 @@ class WorkspaceScreen extends StatelessWidget {
     Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
   }
 
+  Future<void> _openToolSearch(BuildContext context, bool isPro) async {
+    HapticFeedback.selectionClick();
+    final allTools = _sections
+        .expand(
+          (section) => section.tools.map(
+            (tool) => _ToolSearchResult(section: section.label, tool: tool),
+          ),
+        )
+        .toList();
+    final selected = await showSearch<_ToolSearchResult?>(
+      context: context,
+      delegate: _ToolSearchDelegate(items: allTools, isPro: isPro),
+    );
+
+    if (!context.mounted || selected == null) return;
+    if (selected.tool.isPro && !isPro) {
+      _showProPaywall(context);
+      return;
+    }
+    _push(context, selected.tool.screenBuilder());
+  }
+
   void _showProPaywall(BuildContext context) {
     HapticFeedback.mediumImpact();
     showModalBottomSheet(
@@ -330,6 +501,39 @@ class WorkspaceScreen extends StatelessWidget {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => const ProPaywallSheet(),
+    );
+  }
+}
+
+class _HeaderActionButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final Color backgroundColor;
+  final Color borderColor;
+  final VoidCallback onTap;
+
+  const _HeaderActionButton({
+    required this.icon,
+    required this.color,
+    required this.backgroundColor,
+    required this.borderColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor),
+        ),
+        child: Icon(icon, color: color, size: 18),
+      ),
     );
   }
 }
